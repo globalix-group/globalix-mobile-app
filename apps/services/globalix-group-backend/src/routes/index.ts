@@ -1,5 +1,7 @@
 import { Router } from 'express';
+import { body } from 'express-validator';
 import { authMiddleware } from '../middleware/auth';
+import { validateRequest } from '../middleware/validate';
 import { AuthController } from '../controllers/authController';
 import { PropertyController } from '../controllers/propertyController';
 import { CarController } from '../controllers/carController';
@@ -15,16 +17,63 @@ import {
 const router = Router();
 
 // ===== AUTHENTICATION ROUTES =====
-router.post('/auth/login', AuthController.login);
-router.post('/auth/register', AuthController.register);
-router.post('/auth/refresh', AuthController.refresh);
-router.post('/auth/forgot-password', AuthController.forgotPassword);
-router.post('/auth/apple-callback', AuthController.appleCallback);
-router.post('/auth/google-callback', AuthController.googleCallback);
+router.post(
+  '/auth/login',
+  validateRequest([
+    body('email').isEmail().normalizeEmail(),
+    body('password').isLength({ min: 6 }),
+  ]),
+  AuthController.login
+);
+router.post(
+  '/auth/register',
+  validateRequest([
+    body('email').isEmail().normalizeEmail(),
+    body('password').isLength({ min: 8 }),
+    body('name').notEmpty().trim(),
+  ]),
+  AuthController.register
+);
+router.post(
+  '/auth/refresh',
+  validateRequest([body('refreshToken').notEmpty()]),
+  AuthController.refresh
+);
+router.post(
+  '/auth/forgot-password',
+  validateRequest([body('email').isEmail().normalizeEmail()]),
+  AuthController.forgotPassword
+);
+router.post(
+  '/auth/apple-callback',
+  validateRequest([
+    body('appleId').notEmpty(),
+    body('email').optional().isEmail().normalizeEmail(),
+    body('name').optional().isString(),
+  ]),
+  AuthController.appleCallback
+);
+router.post(
+  '/auth/google-callback',
+  validateRequest([
+    body('googleId').notEmpty(),
+    body('email').isEmail().normalizeEmail(),
+    body('name').optional().isString(),
+  ]),
+  AuthController.googleCallback
+);
 router.post('/auth/logout', authMiddleware, AuthController.logout);
 
 // ===== ACTIVITY LOGGING ROUTES =====
-router.post('/activities/log', ActivityController.logActivity);
+router.post(
+  '/activities/log',
+  validateRequest([
+    body('userId').notEmpty(),
+    body('action').notEmpty(),
+    body('type').notEmpty(),
+  ]),
+  ActivityController.logActivity
+);
 router.get('/activities', ActivityController.getActivities);
 
 // ===== PROPERTY ROUTES =====
@@ -52,7 +101,15 @@ router.put('/user/profile', authMiddleware, UserController.updateProfile);
 router.put('/user/preferences', authMiddleware, UserController.updatePreferences);
 
 // ===== INQUIRY ROUTES =====
-router.post('/inquiries', authMiddleware, InquiryController.createInquiry);
+router.post(
+  '/inquiries',
+  authMiddleware,
+  validateRequest([
+    body('propertyId').isUUID(),
+    body('message').notEmpty(),
+  ]),
+  InquiryController.createInquiry
+);
 router.get('/inquiries', authMiddleware, InquiryController.getUserInquiries);
 router.put('/inquiries/:id', authMiddleware, InquiryController.updateInquiry);
 
@@ -61,11 +118,29 @@ router.get('/notifications', authMiddleware, NotificationController.getNotificat
 router.put('/notifications/:id/read', authMiddleware, NotificationController.markAsRead);
 
 // ===== CONTACT ROUTES =====
-router.post('/contacts', ContactController.createContact);
+router.post(
+  '/contacts',
+  validateRequest([
+    body('name').notEmpty(),
+    body('email').isEmail().normalizeEmail(),
+    body('message').notEmpty(),
+  ]),
+  ContactController.createContact
+);
 router.get('/contacts', ContactController.getContacts);
 
 // ===== CAR RESERVATION ROUTES =====
-router.post('/reservations', authMiddleware, CarReservationController.createReservation);
+router.post(
+  '/reservations',
+  authMiddleware,
+  validateRequest([
+    body('carId').isUUID(),
+    body('startDate').isISO8601(),
+    body('endDate').isISO8601(),
+    body('totalPrice').isNumeric(),
+  ]),
+  CarReservationController.createReservation
+);
 router.get('/reservations', authMiddleware, CarReservationController.getUserReservations);
 router.put('/reservations/:id', authMiddleware, CarReservationController.updateReservation);
 

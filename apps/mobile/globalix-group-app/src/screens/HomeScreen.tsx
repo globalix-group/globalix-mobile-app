@@ -6,7 +6,7 @@
 
 // ===== IMPORTS (3 groups with blank lines between) =====
 // 1. React & RN core
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,18 +18,20 @@ import {
   Platform,
   useWindowDimensions,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 
 // 2. Third party & context
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
+import { propertiesApi } from '../services/apiClient';
 
 // 3. Components & utils
 import { GlobalixHeader } from '../components/GlobalixHeader';
 
 // ===== CONSTANTS & DATA =====
-const PROPERTY_DATA = [
+const FALLBACK_PROPERTIES = [
   {
     id: '1',
     title: 'Skyline Penthouse',
@@ -92,7 +94,7 @@ const PROPERTY_DATA = [
   }
 ];
 
-const CATEGORIES = ['Villas', 'Penthouses', 'Estates', 'Commercial', 'Land'];
+const CATEGORIES = ['Villas', 'Penthouses', 'Estates', 'Commercial', 'Condos'];
 
 // ===== INTERFACES & TYPES =====
 interface HomeScreenProps {
@@ -237,6 +239,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   // ===== STATE =====
   const [selectedCategory, setSelectedCategory] = useState('Villas');
+  const [properties, setProperties] = useState<PropertyItem[]>(FALLBACK_PROPERTIES);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // ===== RESPONSIVE SIZING =====
   const cardWidth = width > 600 ? width * 0.75 : width * 0.85;
@@ -246,14 +252,77 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   // ===== MEMOIZED VALUES =====
   const filteredProperties = useMemo(
-    () => PROPERTY_DATA.filter((prop) => prop.type === selectedCategory),
-    [selectedCategory]
+    () => properties.filter((prop) => prop.type === selectedCategory),
+    [properties, selectedCategory]
   );
+
+  const formatCurrency = useCallback((value?: number | string) => {
+    const numeric = Number(value);
+    if (Number.isNaN(numeric)) {
+      return value ? String(value) : '$0';
+    }
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+      }).format(numeric);
+    } catch {
+      return `$${numeric.toLocaleString()}`;
+    }
+  }, []);
+
+  const mapProperty = useCallback(
+    (item: any): PropertyItem => ({
+      id: item.id,
+      title: item.title || 'Luxury Property',
+      location: item.location || 'Location TBD',
+      price: formatCurrency(item.price),
+      beds: item.beds ? String(item.beds) : 'N/A',
+      baths: item.baths ? String(item.baths) : 'N/A',
+      sqft: item.sqft ? String(item.sqft) : 'N/A',
+      image: item.images?.[0] || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=800',
+      tag: (item.status || 'Available').toUpperCase(),
+      type: item.type || 'Villas',
+    }),
+    [formatCurrency]
+  );
+
+  const loadProperties = useCallback(async (showLoader: boolean = true) => {
+    if (showLoader) setLoading(true);
+    setApiError(null);
+    try {
+      const response = await propertiesApi.list(1, 20);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to load properties');
+      }
+
+      const data = (response.data as any)?.data || response.data;
+      const mapped = Array.isArray(data) ? data.map(mapProperty) : [];
+      if (mapped.length > 0) {
+        setProperties(mapped);
+      }
+    } catch (error: any) {
+      setApiError(error.message || 'Failed to load properties');
+    } finally {
+      if (showLoader) setLoading(false);
+    }
+  }, [mapProperty]);
+
+  useEffect(() => {
+    loadProperties();
+  }, [loadProperties]);
 
   // ===== HANDLERS =====
   const handleCategoryPress = useCallback((category: string) => {
     setSelectedCategory(category);
   }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadProperties(false);
+    setRefreshing(false);
+  }, [loadProperties]);
 
   const renderAmenity = useCallback(
     (icon: string, label: string) => (
@@ -279,6 +348,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
       >
         {/* ===== SEARCH SECTION ===== */}
         <TouchableOpacity
@@ -316,10 +388,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           >
             Featured Properties
           </Text>
+          {loading && (
+            <Text style={[styles.resultCount, { color: theme.secondary }]}>Loading latest listings...</Text>
+          )}
+          {apiError && !loading && (
+            <Text style={[styles.resultCount, { color: '#FF6B6B' }]}>{apiError}</Text>
+          )}
         </View>
 
         <FlatList
-          data={PROPERTY_DATA}
+          data={properties.slice(0, 6)}
           horizontal
           showsHorizontalScrollIndicator={false}
           snapToInterval={cardWidth + 20}

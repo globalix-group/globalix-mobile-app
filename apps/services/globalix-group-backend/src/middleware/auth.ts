@@ -27,9 +27,9 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as { userId: string };
     req.userId = decoded.userId;
     req.token = token;
-    next();
+    return next();
   } catch (error) {
-    res.status(401).json({
+    return res.status(401).json({
       success: false,
       error: {
         code: 'INVALID_TOKEN',
@@ -48,8 +48,8 @@ export const optionalAuthMiddleware = (req: Request, res: Response, next: NextFu
       req.userId = decoded.userId;
       req.token = token;
     }
-    next();
+    return next();
   } catch (error) {
-    next();
+    return next();
   }
 };

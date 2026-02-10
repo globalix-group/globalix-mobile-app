@@ -1,5 +1,3 @@
-import { Request, Response } from 'express';
-
 interface ActivityLog {
   userId: string;
   action: string;

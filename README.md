@@ -317,6 +317,30 @@ npm test
 | Styling | TailwindCSS | 3.4.15 |
 | Runtime | Node.js | 18+ |
 
+## 🔒 Security
+
+This project implements comprehensive security measures:
+
+- **Static Analysis**: CodeQL scans all code for vulnerabilities
+- **Secret Detection**: Gitleaks prevents credentials from being committed
+- **Dependency Scanning**: npm audit checks for known vulnerabilities
+- **Container Security**: Trivy scans Docker images before deployment
+- **Input Validation**: All API endpoints validate and sanitize input
+- **Rate Limiting**: API endpoints are rate-limited to prevent abuse
+- **Authentication**: JWT-based with secure token storage and rotation
+- **Encryption**: Passwords hashed with bcryptjs, all sensitive data encrypted
+- **Headers**: Security headers enforced via Helmet
+- **CORS**: Restricted to known origins, no wildcard policies
+
+**Automated Security Checks**: All pull requests must pass:
+- ✅ CodeQL analysis
+- ✅ Gitleaks secret detection
+- ✅ npm audit (moderate severity+)
+- ✅ Trivy container scanning
+- ✅ TypeScript type checking
+
+For security concerns, see [SECURITY.md](./SECURITY.md) for reporting procedures and security policy.
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -324,6 +348,8 @@ npm test
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+**All pull requests must pass security checks** before merging.
 
 ## 📄 License
 

@@ -1,5 +1,4 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 import { User } from '../models';
 import { AppError } from '../middleware/errorHandler';
 
@@ -35,13 +34,15 @@ export class AuthService {
       throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
     }
 
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || 'secret', {
-      expiresIn: process.env.JWT_EXPIRY || '1h',
-    });
+    const jwtSecret = (process.env.JWT_SECRET || 'secret') as Secret;
+    const refreshSecret = (process.env.JWT_REFRESH_SECRET || 'refresh') as Secret;
+    const tokenExpiry = (process.env.JWT_EXPIRY || '1h') as SignOptions['expiresIn'];
+    const refreshExpiry = (process.env.JWT_REFRESH_EXPIRY || '7d') as SignOptions['expiresIn'];
+    const tokenOptions: SignOptions = { expiresIn: tokenExpiry };
+    const refreshOptions: SignOptions = { expiresIn: refreshExpiry };
 
-    const refreshToken = jwt.sign({ userId: user.id }, process.env.JWT_REFRESH_SECRET || 'refresh', {
-      expiresIn: process.env.JWT_REFRESH_EXPIRY || '7d',
-    });
+    const token = jwt.sign({ userId: user.id }, jwtSecret, tokenOptions);
+    const refreshToken = jwt.sign({ userId: user.id }, refreshSecret, refreshOptions);
 
     return {
       user: {
@@ -57,16 +58,18 @@ export class AuthService {
 
   static async refreshToken(refreshToken: string) {
     try {
-      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || 'refresh') as { userId: string };
+      const refreshSecret = (process.env.JWT_REFRESH_SECRET || 'refresh') as Secret;
+      const decoded = jwt.verify(refreshToken, refreshSecret) as { userId: string };
       const user = await User.findByPk(decoded.userId);
 
       if (!user) {
         throw new AppError(401, 'USER_NOT_FOUND', 'User not found');
       }
 
-      const newToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || 'secret', {
-        expiresIn: process.env.JWT_EXPIRY || '1h',
-      });
+      const jwtSecret = (process.env.JWT_SECRET || 'secret') as Secret;
+      const tokenExpiry = (process.env.JWT_EXPIRY || '1h') as SignOptions['expiresIn'];
+      const tokenOptions: SignOptions = { expiresIn: tokenExpiry };
+      const newToken = jwt.sign({ userId: user.id }, jwtSecret, tokenOptions);
 
       return {
         token: newToken,
@@ -87,9 +90,9 @@ export class AuthService {
       throw new AppError(404, 'USER_NOT_FOUND', 'User with this email not found');
     }
 
-    const resetToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || 'secret', {
-      expiresIn: '1h',
-    });
+    const jwtSecret = (process.env.JWT_SECRET || 'secret') as Secret;
+    const resetOptions: SignOptions = { expiresIn: '1h' as SignOptions['expiresIn'] };
+    const resetToken = jwt.sign({ userId: user.id }, jwtSecret, resetOptions);
 
     return {
       email: user.email,
@@ -108,9 +111,10 @@ export class AuthService {
       });
     }
 
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || 'secret', {
-      expiresIn: process.env.JWT_EXPIRY || '1h',
-    });
+    const jwtSecret = (process.env.JWT_SECRET || 'secret') as Secret;
+    const tokenExpiry = (process.env.JWT_EXPIRY || '1h') as SignOptions['expiresIn'];
+    const tokenOptions: SignOptions = { expiresIn: tokenExpiry };
+    const token = jwt.sign({ userId: user.id }, jwtSecret, tokenOptions);
 
     return {
       user: {
@@ -134,9 +138,10 @@ export class AuthService {
       });
     }
 
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || 'secret', {
-      expiresIn: process.env.JWT_EXPIRY || '1h',
-    });
+    const jwtSecret = (process.env.JWT_SECRET || 'secret') as Secret;
+    const tokenExpiry = (process.env.JWT_EXPIRY || '1h') as SignOptions['expiresIn'];
+    const tokenOptions: SignOptions = { expiresIn: tokenExpiry };
+    const token = jwt.sign({ userId: user.id }, jwtSecret, tokenOptions);
 
     return {
       user: {

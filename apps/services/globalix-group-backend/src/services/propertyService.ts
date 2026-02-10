@@ -62,6 +62,7 @@ export class PropertyService {
   }
 
   static async getPropertiesForMap(bounds?: any) {
+    void bounds;
     return await Property.findAll({
       where: {
         latitude: { [require('sequelize').Op.ne]: null },

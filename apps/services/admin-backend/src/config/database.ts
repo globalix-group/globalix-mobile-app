@@ -8,6 +8,15 @@ const sequelize = new Sequelize({
   database: process.env.DB_NAME || 'globalix_db',
   username: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
+  dialectOptions:
+    process.env.DB_SSL === 'true'
+      ? {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false,
+          },
+        }
+      : undefined,
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
   pool: {
     max: 10,

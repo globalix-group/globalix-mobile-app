@@ -16,6 +16,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
+import { clearAuthTokens, getAuthToken } from './src/services/apiClient';
 
 // 3. Components & screens
 import { SplashScreen } from './src/screens/SplashScreen';
@@ -247,12 +248,13 @@ export default function App() {
   useEffect(() => {
     const checkAuthState = async () => {
       try {
-        dispatch({ 
-          type: 'RESTORE_TOKEN', 
-          payload: { 
-            isLoggedIn: false, 
-            hasSeenOnboarding: false 
-          } 
+        const token = await getAuthToken();
+        dispatch({
+          type: 'RESTORE_TOKEN',
+          payload: {
+            isLoggedIn: !!token,
+            hasSeenOnboarding: false,
+          },
         });
       } catch (e) {
         console.error('Error restoring state:', e);
@@ -275,7 +277,10 @@ export default function App() {
       hasSeenOnboarding: state.hasSeenOnboarding,
       isLoading: state.isLoading,
       login: async () => { dispatch({ type: 'SIGN_IN' }); },
-      logout: async () => { dispatch({ type: 'SIGN_OUT' }); },
+      logout: async () => {
+        await clearAuthTokens();
+        dispatch({ type: 'SIGN_OUT' });
+      },
       completeOnboarding: async () => { dispatch({ type: 'COMPLETE_ONBOARDING' }); },
     }),
     [state]

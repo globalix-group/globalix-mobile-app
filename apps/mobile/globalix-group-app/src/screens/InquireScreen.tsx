@@ -25,6 +25,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
+import { contactsApi } from '../services/apiClient';
 
 // ===== INTERFACES & TYPES =====
 interface InquireScreenProps {
@@ -117,18 +118,38 @@ export const InquireScreen: React.FC<InquireScreenProps> = ({
     phone: '',
     message: `I am interested in the ${item?.name || 'this vehicle'}. Please provide more details regarding availability.`,
   });
+  const [loading, setLoading] = useState(false);
 
   // ===== HANDLERS =====
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.name || !form.email) {
       Alert.alert('Missing Info', 'Please provide at least your name and email.');
       return;
     }
-    Alert.alert(
-      'Inquiry Sent',
-      `Thank you, ${form.name}. A Globalix agent will contact you shortly regarding the ${item?.name}.`,
-      [{ text: 'Great', onPress: () => navigation.goBack() }]
-    );
+
+    setLoading(true);
+    try {
+      const response = await contactsApi.create({
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        message: form.message,
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to send inquiry');
+      }
+
+      Alert.alert(
+        'Inquiry Sent',
+        `Thank you, ${form.name}. A Globalix agent will contact you shortly regarding the ${item?.name}.`,
+        [{ text: 'Great', onPress: () => navigation.goBack() }]
+      );
+    } catch (error: any) {
+      Alert.alert('Send Failed', error.message || 'Unable to send your inquiry.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ===== RENDER =====
@@ -154,7 +175,7 @@ export const InquireScreen: React.FC<InquireScreenProps> = ({
               <Ionicons name="close" size={28} color={theme.text} />
             </TouchableOpacity>
             <Text style={[styles.headerTitle, { color: theme.text }]}>
-              Vehicle Inquiry
+              Inquire Now
             </Text>
           </View>
 

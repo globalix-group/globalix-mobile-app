@@ -6,7 +6,7 @@
 
 // ===== IMPORTS (3 groups with blank lines between) =====
 // 1. React & RN core
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -17,11 +17,13 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 
 // 2. Third party & context
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
+import { contactsApi } from '../services/apiClient';
 
 // ===== CONSTANTS & DATA =====
 const WHATSAPP_NUMBER = '+1234567890';
@@ -40,6 +42,39 @@ export const ContactScreen: React.FC<ContactScreenProps> = ({
 }) => {
   const { theme, isDark } = useTheme();
   const propertyTitle = route.params?.title || DEFAULT_PROPERTY;
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    message: `I am interested in ${propertyTitle}. Please share more details.`,
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = useCallback(async () => {
+    if (!form.name || !form.email || !form.message) {
+      Alert.alert('Missing Info', 'Please complete all required fields.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await contactsApi.create({
+        name: form.name,
+        email: form.email,
+        message: form.message,
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to send inquiry');
+      }
+
+      Alert.alert('Inquiry Sent', 'Your message has been sent to our team.');
+      navigation.goBack();
+    } catch (error: any) {
+      Alert.alert('Send Failed', error.message || 'Unable to send your inquiry.');
+    } finally {
+      setLoading(false);
+    }
+  }, [form, navigation]);
 
   // ===== RENDER =====
   return (
@@ -88,6 +123,8 @@ export const ContactScreen: React.FC<ContactScreenProps> = ({
               ]}
               placeholder="John Doe"
               placeholderTextColor={isDark ? '#555' : '#999'}
+              value={form.name}
+              onChangeText={(text) => setForm((prev) => ({ ...prev, name: text }))}
             />
 
             {/* Email */}
@@ -106,6 +143,8 @@ export const ContactScreen: React.FC<ContactScreenProps> = ({
               placeholder="john@example.com"
               keyboardType="email-address"
               placeholderTextColor={isDark ? '#555' : '#999'}
+              value={form.email}
+              onChangeText={(text) => setForm((prev) => ({ ...prev, email: text }))}
             />
 
             {/* Message */}
@@ -124,13 +163,17 @@ export const ContactScreen: React.FC<ContactScreenProps> = ({
               multiline
               numberOfLines={4}
               placeholderTextColor={isDark ? '#555' : '#999'}
+              value={form.message}
+              onChangeText={(text) => setForm((prev) => ({ ...prev, message: text }))}
             />
 
             {/* Submit Button */}
             <TouchableOpacity
               style={[styles.sendButton, { backgroundColor: theme.primary }]}
+              onPress={handleSubmit}
+              disabled={loading}
             >
-              <Text style={styles.sendButtonText}>Send Inquiry</Text>
+              <Text style={styles.sendButtonText}>{loading ? 'Sending...' : 'Send Inquiry'}</Text>
             </TouchableOpacity>
           </View>
 

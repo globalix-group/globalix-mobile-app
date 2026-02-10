@@ -17,13 +17,13 @@ export const ActivityController = {
 
       ActivityLogger.log(userId, action, type, metadata);
 
-      res.json({
+      return res.json({
         success: true,
         message: 'Activity logged',
       });
     } catch (error) {
       console.error('Activity logging error:', error);
-      res.status(500).json({ error: 'Failed to log activity' });
+      return res.status(500).json({ error: 'Failed to log activity' });
     }
   },
 
@@ -38,7 +38,7 @@ export const ActivityController = {
 
       const result = ActivityLogger.getLogs(limit, offset, type);
 
-      res.json({
+      return res.json({
         success: true,
         data: result.data,
         total: result.total,
@@ -47,7 +47,7 @@ export const ActivityController = {
       });
     } catch (error) {
       console.error('Failed to fetch activities:', error);
-      res.status(500).json({ error: 'Failed to fetch activities' });
+      return res.status(500).json({ error: 'Failed to fetch activities' });
     }
   },
 };

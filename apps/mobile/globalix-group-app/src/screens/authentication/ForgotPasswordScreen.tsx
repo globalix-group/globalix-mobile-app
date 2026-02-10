@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme/ThemeContext';
+import { authApi } from '../../services/apiClient';
 
 export const ForgotPasswordScreen = ({ navigation }: any) => {
   const { theme, isDark } = useTheme();
@@ -49,8 +50,10 @@ export const ForgotPasswordScreen = ({ navigation }: any) => {
     
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const response = await authApi.forgotPassword(email);
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to send reset email');
+      }
       setSent(true);
     } catch (error) {
       setErrors({ email: 'Failed to send reset email. Try again.' });

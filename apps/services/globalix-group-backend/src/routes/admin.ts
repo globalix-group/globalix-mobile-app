@@ -1,6 +1,5 @@
 import express, { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
 
 const adminRouter = express.Router();
 
@@ -72,21 +71,21 @@ adminRouter.post('/login', async (req: Request, res: Response) => {
       });
     }
 
-    res.status(401).json({ error: 'Invalid credentials' });
+    return res.status(401).json({ error: 'Invalid credentials' });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
 // ===== GET DASHBOARD STATS =====
 adminRouter.get('/dashboard', (req: Request, res: Response) => {
   try {
-    res.json({
+    return res.json({
       stats: dashboardStats,
       lastUpdated: new Date(),
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
@@ -118,14 +117,14 @@ adminRouter.get('/activity', (req: Request, res: Response) => {
     // Paginate
     const paginatedLogs = filtered.slice(Number(offset), Number(offset) + Number(limit));
 
-    res.json({
+    return res.json({
       total: filtered.length,
       limit: Number(limit),
       offset: Number(offset),
       activities: paginatedLogs,
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
@@ -158,7 +157,7 @@ adminRouter.get('/earnings', (req: Request, res: Response) => {
       .filter((t) => t.status === 'pending')
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    res.json({
+    return res.json({
       period,
       totalEarnings,
       completedEarnings,
@@ -167,7 +166,7 @@ adminRouter.get('/earnings', (req: Request, res: Response) => {
       transactions: filtered,
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
@@ -193,12 +192,12 @@ adminRouter.get('/analytics', (req: Request, res: Response) => {
       });
     }
 
-    res.json({
+    return res.json({
       period: `Last ${days} days`,
       data: chartData,
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
@@ -227,31 +226,32 @@ adminRouter.get('/users', (req: Request, res: Response) => {
 
     const paginatedUsers = filtered.slice(Number(offset), Number(offset) + Number(limit));
 
-    res.json({
+    return res.json({
       total: filtered.length,
       limit: Number(limit),
       offset: Number(offset),
       users: paginatedUsers,
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
 // ===== GET SIGN IN/SIGN UP STATISTICS =====
 adminRouter.get('/auth-stats', (req: Request, res: Response) => {
+  void req;
   try {
     const signups = activityLogs.filter((log) => log.type === 'signup');
     const logins = activityLogs.filter((log) => log.type === 'login');
 
-    res.json({
+    return res.json({
       totalSignups: signups.length,
       totalLogins: logins.length,
       recentSignups: signups.slice(0, 5),
       recentLogins: logins.slice(0, 5),
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 

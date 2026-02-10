@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GlobalixHeader } from '../components/GlobalixHeader';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
+import { carsApi } from '../services/apiClient';
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -31,7 +32,7 @@ const isTablet = width > 600;
 const cardWidth = isTablet ? width * 0.6 : width * 0.85;
 
 // 1. DATA SOURCE
-const CAR_DATA = [
+const FALLBACK_CARS = [
   { 
     id: '1', 
     name: 'Lamborghini Urus', 
@@ -78,11 +79,11 @@ const CAR_DATA = [
   },
 ];
 
-const CATEGORIES = ['All', 'Supercars', 'Exotic SUV', 'Executive'];
+const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?q=80&w=800';
 
 // CAR CARD COMPONENT
 interface CarCardProps {
-  item: typeof CAR_DATA[0];
+  item: typeof FALLBACK_CARS[0];
   index: number;
   isSelected: boolean;
   onPress: () => void;
@@ -193,19 +194,80 @@ export const CarsScreen = ({ navigation }: any) => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [selectedCar, setSelectedCar] = useState<string | null>(null);
+  const [cars, setCars] = useState(FALLBACK_CARS);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // 2. LIVE FILTER LOGIC
   const filteredCars = useMemo(() => {
-    return CAR_DATA.filter(car => {
+    return cars.filter(car => {
       const matchesCategory = activeCategory === 'All' || car.category === activeCategory;
       const matchesSearch = car.name.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory, searchQuery, cars]);
+
+  const categories = useMemo(() => {
+    const apiCategories = Array.from(new Set(cars.map((car) => car.category).filter(Boolean)));
+    return ['All', ...apiCategories];
+  }, [cars]);
+
+  const formatCurrency = useCallback((value?: number | string) => {
+    const numeric = Number(value);
+    if (Number.isNaN(numeric)) {
+      return value ? String(value) : '$0';
+    }
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+      }).format(numeric);
+    } catch {
+      return `$${numeric.toLocaleString()}`;
+    }
+  }, []);
+
+  const mapCar = useCallback(
+    (item: any) => ({
+      id: item.id,
+      name: item.name || `${item.brand || ''} ${item.model || ''}`.trim() || 'Luxury Vehicle',
+      price: formatCurrency(item.price),
+      type: item.brand || 'Luxury',
+      category: item.category || 'Executive',
+      hp: item.features?.[0] || item.specs || 'Performance',
+      speed: item.features?.[1] || (item.year ? `${item.year}` : '—'),
+      engine: item.features?.[2] || item.model || 'Premium Engine',
+      image: item.images?.[0] || DEFAULT_IMAGE,
+    }),
+    [formatCurrency]
+  );
+
+  const loadCars = useCallback(async (showLoader: boolean = true) => {
+    if (showLoader) setLoading(true);
+    setApiError(null);
+    try {
+      const response = await carsApi.list(1, 20);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to load cars');
+      }
+
+      const data = (response.data as any)?.data || response.data;
+      const mapped = Array.isArray(data) ? data.map(mapCar) : [];
+      if (mapped.length > 0) {
+        setCars(mapped);
+      }
+    } catch (error: any) {
+      setApiError(error.message || 'Failed to load cars');
+    } finally {
+      if (showLoader) setLoading(false);
+    }
+  }, [mapCar]);
 
   // ANIMATIONS
   useEffect(() => {
+    loadCars();
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -218,12 +280,13 @@ export const CarsScreen = ({ navigation }: any) => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, [fadeAnim, slideAnim]);
+  }, [fadeAnim, slideAnim, loadCars]);
 
-  const onRefresh = () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  };
+    await loadCars(false);
+    setRefreshing(false);
+  }, [loadCars]);
 
   const handleCategoryPress = (category: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -272,6 +335,12 @@ export const CarsScreen = ({ navigation }: any) => {
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Categories</Text>
           <Text style={[styles.resultCount, { color: theme.secondary }]}>{filteredCars.length}</Text>
+          {loading && (
+            <Text style={[styles.resultCount, { color: theme.secondary }]}>Loading fleet...</Text>
+          )}
+          {apiError && !loading && (
+            <Text style={[styles.resultCount, { color: '#FF6B6B' }]}>{apiError}</Text>
+          )}
         </View>
         
         <ScrollView 
@@ -280,7 +349,7 @@ export const CarsScreen = ({ navigation }: any) => {
           contentContainerStyle={styles.categoryRow}
           scrollEventThrottle={16}
         >
-          {CATEGORIES.map((cat) => {
+          {categories.map((cat) => {
             const isActive = activeCategory === cat;
             return (
               <Animated.View key={cat}>

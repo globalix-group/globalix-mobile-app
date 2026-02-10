@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useTheme } from '../../theme/ThemeContext';
-import { activityApi } from '../../services/apiClient';
+import { activityApi, authApi, setAuthTokens } from '../../services/apiClient';
 
 export const SignUpScreen = ({ navigation }: any) => {
   const { theme, isDark } = useTheme();
@@ -63,8 +63,25 @@ export const SignUpScreen = ({ navigation }: any) => {
       });
       
       console.log('Apple Sign-Up Success:', credential);
-      // Simulate API call to verify/create user
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
+        .filter(Boolean)
+        .join(' ');
+
+      const response = await authApi.appleCallback(
+        credential.user,
+        credential.email || '',
+        fullName || 'Apple User'
+      );
+
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Apple sign-up failed');
+      }
+
+      const { token } = response.data as any;
+      if (token) {
+        await setAuthTokens(token);
+      }
+
       await login();
     } catch (error: any) {
       if (error.code === 'ERR_REQUEST_CANCELED') {
@@ -119,28 +136,40 @@ export const SignUpScreen = ({ navigation }: any) => {
     
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      const fullName = `${firstName} ${lastName}`.trim();
+
+      const registerResponse = await authApi.register(email, password, fullName);
+      if (!registerResponse.success) {
+        throw new Error(registerResponse.error || 'Sign up failed');
+      }
+
+      const loginResponse = await authApi.login(email, password);
+      if (!loginResponse.success || !loginResponse.data) {
+        throw new Error(loginResponse.error || 'Login failed after sign up');
+      }
+
+      const { token, refreshToken, user } = loginResponse.data as any;
+      if (token) {
+        await setAuthTokens(token, refreshToken);
+      }
+
       // Log activity to backend (non-blocking)
       Promise.resolve().then(() => {
-        const fullName = `${firstName} ${lastName}`;
         activityApi.logActivity(
-          'user-' + email.split('@')[0],
+          user?.id || `user-${email.split('@')[0]}`,
           `New signup: ${fullName}`,
           'signup',
           { email, name: fullName }
         ).catch((err) => console.warn('Activity log failed:', err));
       });
-      
-      // Call login from auth context
+
       await login();
     } catch (error) {
       setErrors({ email: 'Sign up failed. Please try again.' });
     } finally {
       setLoading(false);
     }
-  }, [validateForm, login, firstName, lastName, email]);
+  }, [validateForm, login, firstName, lastName, email, password]);
   
   const renderInput = (
     label: string,

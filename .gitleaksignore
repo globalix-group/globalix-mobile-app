@@ -1,0 +1,14 @@
+# Gitleaks Configuration and Ignore Rules
+# This file helps prevent false positives in Gitleaks secret scanning
+
+# Ignore test/example credentials in documentation
+# Example credentials marked clearly should be safe
+demo@globalix.com
+Password123!
+
+# Ignore placeholder keys in environment templates
+# These are intentionally fake for configuration examples
+xxx-replace-me-xxx
+your-secret-here
+your-token-here
+change-me-in-production

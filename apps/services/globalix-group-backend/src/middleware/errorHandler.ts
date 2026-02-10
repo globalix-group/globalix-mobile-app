@@ -34,7 +34,7 @@ export const errorHandler = (err: Error | AppError, req: Request, res: Response,
     } as ErrorResponse);
   }
 
-  res.status(500).json({
+  return res.status(500).json({
     success: false,
     error: {
       code: 'INTERNAL_SERVER_ERROR',
@@ -45,7 +45,7 @@ export const errorHandler = (err: Error | AppError, req: Request, res: Response,
 };
 
 export const notFoundHandler = (req: Request, res: Response) => {
-  res.status(404).json({
+  return res.status(404).json({
     success: false,
     error: {
       code: 'NOT_FOUND',

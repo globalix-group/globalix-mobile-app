@@ -1,0 +1,6 @@
+# Trivy Vulnerability Ignore Configuration
+# This file allows us to document and manage known vulnerabilities
+# that are either not applicable or have mitigations in place
+
+# Example format for future ignoring:
+# CVE-2021-12345 exp:2025-12-31T00:00:00Z

@@ -6,7 +6,8 @@ const router = Router();
 // Demo endpoints that work without database
 
 // ===== HEALTH & INFO =====
-router.get('/info', (req, res) => {
+router.get('/info', (req: any, res: any) => {
+  void req;
   res.json({
     success: true,
     data: {
@@ -20,7 +21,7 @@ router.get('/info', (req, res) => {
 });
 
 // ===== AUTHENTICATION ROUTES (DEMO) =====
-router.post('/auth/login', (req, res) => {
+router.post('/auth/login', (req: any, res: any) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({
@@ -38,7 +39,7 @@ router.post('/auth/login', (req, res) => {
   });
 });
 
-router.post('/auth/register', (req, res) => {
+router.post('/auth/register', (req: any, res: any) => {
   const { email, password, name } = req.body;
   if (!email || !password || !name) {
     return res.status(400).json({
@@ -52,7 +53,7 @@ router.post('/auth/register', (req, res) => {
   });
 });
 
-router.post('/auth/refresh', (req, res) => {
+router.post('/auth/refresh', (req: any, res: any) => {
   const { refreshToken } = req.body;
   if (!refreshToken) {
     return res.status(400).json({
@@ -70,7 +71,8 @@ router.post('/auth/refresh', (req, res) => {
 });
 
 // ===== PROPERTY ROUTES (DEMO) =====
-router.get('/properties', (req, res) => {
+router.get('/properties', (req: any, res: any) => {
+  void req;
   res.json({
     success: true,
     data: {
@@ -116,7 +118,7 @@ router.get('/properties', (req, res) => {
   });
 });
 
-router.get('/properties/:id', (req, res) => {
+router.get('/properties/:id', (req: any, res: any) => {
   const { id } = req.params;
   res.json({
     success: true,
@@ -139,7 +141,8 @@ router.get('/properties/:id', (req, res) => {
   });
 });
 
-router.get('/properties/categories', (req, res) => {
+router.get('/properties/categories', (req: any, res: any) => {
+  void req;
   res.json({
     success: true,
     data: ['Penthouses', 'Villas', 'Estates', 'Commercial', 'Condos'],
@@ -147,7 +150,8 @@ router.get('/properties/categories', (req, res) => {
 });
 
 // ===== CAR ROUTES (DEMO) =====
-router.get('/cars', (req, res) => {
+router.get('/cars', (req: any, res: any) => {
+  void req;
   res.json({
     success: true,
     data: {
@@ -193,7 +197,7 @@ router.get('/cars', (req, res) => {
   });
 });
 
-router.get('/cars/:id', (req, res) => {
+router.get('/cars/:id', (req: any, res: any) => {
   const { id } = req.params;
   res.json({
     success: true,
@@ -214,7 +218,8 @@ router.get('/cars/:id', (req, res) => {
   });
 });
 
-router.get('/cars/categories', (req, res) => {
+router.get('/cars/categories', (req: any, res: any) => {
+  void req;
   res.json({
     success: true,
     data: ['Luxury', 'SuperCar', 'Sports', 'Sedan', 'SUV'],
@@ -222,7 +227,7 @@ router.get('/cars/categories', (req, res) => {
 });
 
 // ===== USER ROUTES (DEMO) =====
-router.get('/user/profile', authMiddleware, (req, res) => {
+router.get('/user/profile', authMiddleware, (req: any, res: any) => {
   res.json({
     success: true,
     data: {
@@ -238,7 +243,7 @@ router.get('/user/profile', authMiddleware, (req, res) => {
 });
 
 // ===== CONTACTS (DEMO) =====
-router.post('/contacts', (req, res) => {
+router.post('/contacts', (req: any, res: any) => {
   const { name, email, phone, message } = req.body;
   if (!name || !email || !message) {
     return res.status(400).json({
@@ -253,7 +258,7 @@ router.post('/contacts', (req, res) => {
 });
 
 // Catch-all for endpoints that require database
-router.all('*', (req, res) => {
+router.all('*', (req: any, res: any) => {
   res.status(503).json({
     success: false,
     error: {

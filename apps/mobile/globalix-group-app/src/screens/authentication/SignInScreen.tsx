@@ -26,7 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useTheme } from '../../theme/ThemeContext';
-import { activityApi } from '../../services/apiClient';
+import { activityApi, authApi, setAuthTokens } from '../../services/apiClient';
 
 /* ============================================================================
    INTERFACES & TYPES
@@ -112,26 +112,33 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
 
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      
+      const response = await authApi.login(email, password);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Invalid email or password');
+      }
+
+      const { token, refreshToken, user } = response.data as any;
+      if (token) {
+        await setAuthTokens(token, refreshToken);
+      }
+
       // Log activity to backend (non-blocking)
       Promise.resolve().then(() => {
         activityApi.logActivity(
-          'user-' + email.split('@')[0],
-          `User login: ${email}`,
+          user?.id || `user-${email.split('@')[0]}`,
+          `User login: ${user?.name || email}`,
           'login',
           { email }
         ).catch((err) => console.warn('Activity log failed:', err));
       });
-      
+
       await login();
-    } catch (error) {
-      Alert.alert('Sign-In Failed', 'Invalid email or password');
+    } catch (error: any) {
+      Alert.alert('Sign-In Failed', error.message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
-  }, [validateForm, login]);
+  }, [validateForm, login, email, password]);
 
   const handleAppleSignIn = useCallback(async () => {
     setLoading(true);
@@ -144,7 +151,26 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
       });
 
       console.log('Apple Sign-In Success:', credential);
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
+        .filter(Boolean)
+        .join(' ');
+
+      const response = await authApi.appleCallback(
+        credential.user,
+        credential.email || '',
+        fullName || 'Apple User'
+      );
+
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Apple sign-in failed');
+      }
+
+      const { token } = response.data as any;
+      if (token) {
+        await setAuthTokens(token);
+      }
+
       await login();
     } catch (error: any) {
       if (error.code === 'ERR_REQUEST_CANCELED') {

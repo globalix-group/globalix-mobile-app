@@ -20,10 +20,15 @@ export const Sidebar: React.FC<{ open?: boolean; onClose?: () => void }> = ({ op
 
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: '📊' },
+    { name: 'Properties', path: '/properties', icon: '🏠' },
+    { name: 'Cars', path: '/cars', icon: '🚗' },
+    { name: 'Inquiries', path: '/inquiries', icon: '📧' },
+    { name: 'Contacts', path: '/contacts', icon: '💬' },
+    { name: 'Reservations', path: '/reservations', icon: '📅' },
+    { name: 'Users', path: '/users', icon: '👥' },
     { name: 'Activity Logs', path: '/activity', icon: '📝' },
     { name: 'Analytics', path: '/analytics', icon: '📈' },
     { name: 'Earnings', path: '/earnings', icon: '💰' },
-    { name: 'Users', path: '/users', icon: '👥' },
   ];
 
   const sidebarContent = (
