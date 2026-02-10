@@ -79,13 +79,41 @@ app.use('/api/v1/auth', authLimiter);
 app.use('/api/v1', mainRoutes);
 app.use('/admin/api', adminRoutes);
 
+type DbHealthStatus = {
+  enabled: boolean;
+  connected: boolean;
+  lastError: string | null;
+  checkedAt: string | null;
+};
+
+const dbHealth: DbHealthStatus = {
+  enabled: false,
+  connected: false,
+  lastError: null,
+  checkedAt: null,
+};
+
 // ===== HEALTH CHECK =====
 app.get('/health', (req: Request, res: Response) => {
+  const dbStatus = dbHealth.enabled
+    ? dbHealth.connected
+      ? 'connected'
+      : 'not_connected'
+    : 'disabled';
+
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     version: '1.0.0',
-    message: 'Backend is running! Connect PostgreSQL to enable database features.',
+    message:
+      dbStatus === 'connected'
+        ? 'Backend is running! PostgreSQL is connected.'
+        : 'Backend is running! Connect PostgreSQL to enable database features.',
+    db: {
+      status: dbStatus,
+      checkedAt: dbHealth.checkedAt,
+      lastError: dbHealth.lastError,
+    },
   });
 });
 
@@ -98,6 +126,7 @@ async function startServer() {
   try {
     // Attempt DB connection if env is present (non-blocking for local dev)
     const shouldConnectDb = !!process.env.DB_HOST;
+    dbHealth.enabled = shouldConnectDb;
     if (shouldConnectDb) {
       try {
         await sequelize.authenticate();
@@ -106,9 +135,15 @@ async function startServer() {
           await sequelize.sync({ alter: true });
         }
         console.log('🔌 PostgreSQL connected successfully');
+        dbHealth.connected = true;
+        dbHealth.lastError = null;
+        dbHealth.checkedAt = new Date().toISOString();
       } catch (dbErr) {
         console.warn('⚠️  PostgreSQL connection failed:', dbErr);
         console.warn('   Backend will still run. Check your .env DB_* values.');
+        dbHealth.connected = false;
+        dbHealth.lastError = dbErr instanceof Error ? dbErr.message : 'Unknown error';
+        dbHealth.checkedAt = new Date().toISOString();
       }
     } else {
       console.log('\n⚠️  Database connection skipped');
