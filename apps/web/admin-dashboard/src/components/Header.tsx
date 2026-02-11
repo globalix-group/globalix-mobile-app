@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
-import { Menu, X, LogOut } from 'lucide-react';
+import { Menu, LogOut } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 
 interface HeaderProps {
