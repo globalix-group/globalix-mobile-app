@@ -1,5 +1,4 @@
 import React from 'react';
-import { TrendingUp, Users, DollarSign, AlertCircle } from 'lucide-react';
 
 interface StatCardProps {
   title: string;
