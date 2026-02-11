@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/router';
 import { Layout } from '../components/Layout';
 import { adminApi } from '../api/adminClient';
 import { useAdmin } from '../context/AdminContext';
@@ -15,7 +14,6 @@ interface Activity {
 }
 
 const ActivityPage: React.FC = () => {
-  const router = useRouter();
   const { token } = useAdmin();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
