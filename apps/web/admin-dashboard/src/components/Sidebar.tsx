@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Menu, X } from 'lucide-react';
 import { useAdmin } from '../context/AdminContext';
 
 export const Sidebar: React.FC<{ open?: boolean; onClose?: () => void }> = ({ open = true, onClose }) => {
