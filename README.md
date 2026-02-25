@@ -76,7 +76,7 @@ globalix-group/
    DB_PASSWORD=your_password
    DB_NAME=restate_db
    DB_PORT=5432
-   JWT_SECRET=your_secret_key_here
+   JWT_SECRET=
    JWT_REFRESH_SECRET=your_refresh_secret_here
    NODE_ENV=development
    ```
@@ -88,7 +88,7 @@ globalix-group/
    DB_USER=postgres
    DB_PASSWORD=your_password
    DB_NAME=restate_db
-   JWT_SECRET=admin_jwt_secret
+   JWT_SECRET=
    ```
 
 4. **Create database**

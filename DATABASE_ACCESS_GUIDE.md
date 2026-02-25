@@ -62,7 +62,7 @@ DB_USER=postgres
 DB_PASSWORD=your_secure_password_here
 
 # JWT Configuration
-JWT_SECRET=your_secret_key_at_least_32_chars_random
+JWT_SECRET=
 JWT_REFRESH_SECRET=your_refresh_secret_at_least_32_chars_random
 
 # Server Configuration
@@ -84,7 +84,7 @@ DB_USER=postgres
 DB_PASSWORD=your_secure_password_here
 
 # JWT Configuration
-JWT_SECRET=your_secret_key_at_least_32_chars_random
+JWT_SECRET=
 
 # Server Configuration
 PORT=3000

@@ -105,7 +105,7 @@ const authLimiter = rateLimit({
 const tenantKey = (req: express.Request): string => {
   const headerTenant = req.headers['x-tenant-id'];
   const tenantId = Array.isArray(headerTenant) ? headerTenant[0] : headerTenant;
-  return tenantId || ipKeyGenerator(req);
+  return tenantId || ipKeyGenerator(req.ip || '0.0.0.0');
 };
 
 const readLimiter = rateLimit({

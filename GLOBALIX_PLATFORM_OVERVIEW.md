@@ -554,7 +554,7 @@ DB_USER=postgres
 DB_PASSWORD=yourpassword
 DB_NAME=restate_db
 DB_PORT=5432
-JWT_SECRET=your_random_secret_key_here
+JWT_SECRET=
 JWT_REFRESH_SECRET=your_refresh_secret_here
 NODE_ENV=development
 ```
@@ -566,7 +566,7 @@ DB_HOST=localhost
 DB_USER=postgres
 DB_PASSWORD=yourpassword
 DB_NAME=restate_db
-JWT_SECRET=admin_jwt_secret
+JWT_SECRET=
 ```
 
 **Mobile App:**

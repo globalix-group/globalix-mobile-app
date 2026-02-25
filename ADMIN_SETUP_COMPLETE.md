@@ -24,7 +24,7 @@ ADMIN_EMAIL=admin@globalix.com
 ADMIN_PASSWORD_HASH=<bcrypt-hashed-password>
 
 # JWT Secret
-JWT_SECRET=your-super-secret-jwt-key-change-this
+JWT_SECRET=
 
 # Database
 DB_HOST=localhost
