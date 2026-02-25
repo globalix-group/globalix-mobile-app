@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { body } from 'express-validator';
 import { AdminController } from '../controllers/adminController';
 import { adminAuthMiddleware } from '../middleware/adminAuth';
@@ -9,6 +10,12 @@ const router = Router();
 // Login - accessible to anyone with admin credentials
 router.post(
   '/login',
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+  }),
   [
     body('email').isEmail().normalizeEmail(),
     body('password').isLength({ min: 6 }),
@@ -23,8 +30,7 @@ router.post(
 router.get('/dashboard', adminAuthMiddleware, AdminController.getDashboard);
 
 // Activity Logs - view all app activity and user movements
-// Temporarily disabled auth for testing
-router.get('/activity', AdminController.getActivity);
+router.get('/activity', adminAuthMiddleware, AdminController.getActivity);
 
 // Earnings - view platform earnings
 router.get('/earnings', adminAuthMiddleware, AdminController.getEarnings);

@@ -5,10 +5,14 @@ import { AppError } from '../middleware/errorHandler';
 export class CarController {
   static async getCars(req: Request, res: Response, next: NextFunction) {
     try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        throw new AppError(400, 'TENANT_REQUIRED', 'Tenant context is required');
+      }
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
 
-      const result = await CarService.getCars(page, limit);
+      const result = await CarService.getCars(tenantId, page, limit);
       res.json({
         success: true,
         data: result,
@@ -20,8 +24,12 @@ export class CarController {
 
   static async getCarById(req: Request, res: Response, next: NextFunction) {
     try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        throw new AppError(400, 'TENANT_REQUIRED', 'Tenant context is required');
+      }
       const { id } = req.params;
-      const car = await CarService.getCarById(id);
+      const car = await CarService.getCarById(tenantId, id);
 
       res.json({
         success: true,
@@ -39,7 +47,12 @@ export class CarController {
         throw new AppError(401, 'UNAUTHORIZED', 'Authentication required');
       }
 
-      const car = await CarService.createCar(userId, req.body);
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        throw new AppError(400, 'TENANT_REQUIRED', 'Tenant context is required');
+      }
+
+      const car = await CarService.createCar(tenantId, userId, req.body);
       res.status(201).json({
         success: true,
         data: car,
@@ -56,8 +69,13 @@ export class CarController {
         throw new AppError(401, 'UNAUTHORIZED', 'Authentication required');
       }
 
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        throw new AppError(400, 'TENANT_REQUIRED', 'Tenant context is required');
+      }
+
       const { id } = req.params;
-      const car = await CarService.updateCar(id, userId, req.body);
+      const car = await CarService.updateCar(tenantId, id, userId, req.body);
 
       res.json({
         success: true,
@@ -75,8 +93,13 @@ export class CarController {
         throw new AppError(401, 'UNAUTHORIZED', 'Authentication required');
       }
 
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        throw new AppError(400, 'TENANT_REQUIRED', 'Tenant context is required');
+      }
+
       const { id } = req.params;
-      const result = await CarService.deleteCar(id, userId);
+      const result = await CarService.deleteCar(tenantId, id, userId);
 
       res.json({
         success: true,
@@ -91,7 +114,13 @@ export class CarController {
     try {
       const { query, brand, minPrice, maxPrice } = req.query;
 
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        throw new AppError(400, 'TENANT_REQUIRED', 'Tenant context is required');
+      }
+
       const cars = await CarService.searchCars(
+        tenantId,
         query as string,
         brand as string,
         minPrice ? parseInt(minPrice as string) : undefined,
@@ -109,7 +138,12 @@ export class CarController {
 
   static async getCategories(req: Request, res: Response, next: NextFunction) {
     try {
-      const categories = await CarService.getCarCategories();
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        throw new AppError(400, 'TENANT_REQUIRED', 'Tenant context is required');
+      }
+
+      const categories = await CarService.getCarCategories(tenantId);
       res.json({
         success: true,
         data: categories,

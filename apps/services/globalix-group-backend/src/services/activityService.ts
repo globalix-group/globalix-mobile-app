@@ -1,4 +1,5 @@
 interface ActivityLog {
+  tenantId: string;
   userId: string;
   action: string;
   type: 'login' | 'signup' | 'property_view' | 'car_view' | 'inquiry' | 'purchase' | 'logout';
@@ -13,8 +14,9 @@ export const ActivityLogger = {
   /**
    * Log an activity
    */
-  log: (userId: string, action: string, type: ActivityLog['type'], metadata?: Record<string, any>) => {
+  log: (tenantId: string, userId: string, action: string, type: ActivityLog['type'], metadata?: Record<string, any>) => {
     const log: ActivityLog = {
+      tenantId,
       userId,
       action,
       type,
@@ -35,8 +37,10 @@ export const ActivityLogger = {
   /**
    * Get activity logs with filtering
    */
-  getLogs: (limit = 50, offset = 0, type?: string) => {
+  getLogs: (tenantId: string, limit = 50, offset = 0, type?: string) => {
     let filtered = activityLogs;
+
+    filtered = filtered.filter(log => log.tenantId === tenantId);
 
     if (type) {
       filtered = filtered.filter(log => log.type === type);
@@ -59,7 +63,7 @@ export const ActivityLogger = {
   /**
    * Get all logs (for dashboard)
    */
-  getAllLogs: () => activityLogs.reverse(),
+  getAllLogs: (tenantId: string) => activityLogs.filter(log => log.tenantId === tenantId).reverse(),
 
   /**
    * Clear logs

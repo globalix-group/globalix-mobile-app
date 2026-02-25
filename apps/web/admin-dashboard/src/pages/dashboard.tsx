@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Layout } from '../components/Layout';
 import { adminApi } from '../api/adminClient';
+import { useAdmin } from '../context/AdminContext';
 import Link from 'next/link';
 
 interface DashboardStats {
@@ -11,25 +12,44 @@ interface DashboardStats {
   inquiries: number;
   contacts: number;
   reservations: number;
+  chats: number;
   activities: number;
   recentActivities: any[];
 }
 
 const Dashboard: React.FC = () => {
   const router = useRouter();
+  const { token } = useAdmin();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!token) {
+      router.push('/login');
+    }
+  }, [token, router]);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (!token) return;
+    fetchDashboardData(true);
+    // Auto-refresh every 5 seconds
+    const interval = setInterval(() => fetchDashboardData(false), 5000);
+    return () => clearInterval(interval);
+  }, [token]);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
       
       // Fetch data from all endpoints in parallel
       const [
+        usersRes,
         propertiesRes,
         carsRes,
         inquiriesRes,
@@ -37,6 +57,7 @@ const Dashboard: React.FC = () => {
         reservationsRes,
         activitiesRes,
       ] = await Promise.all([
+        adminApi.getUsers(1000, 0).catch(() => ({ data: { data: [], total: 0 } })),
         adminApi.getProperties({ limit: 1000 }).catch(() => ({ data: { data: { data: [] } } })),
         adminApi.getCars({ limit: 1000 }).catch(() => ({ data: { data: { data: [] } } })),
         adminApi.getInquiries({ limit: 1000 }).catch(() => ({ data: { data: [] } })),
@@ -46,12 +67,13 @@ const Dashboard: React.FC = () => {
       ]);
 
       setStats({
-        users: 0, // Will be populated by admin backend
+        users: usersRes.data?.total || usersRes.data?.data?.length || 0,
         properties: propertiesRes.data?.data?.data?.length || propertiesRes.data?.data?.length || 0,
         cars: carsRes.data?.data?.data?.length || carsRes.data?.data?.length || 0,
         inquiries: inquiriesRes.data?.data?.length || 0,
         contacts: contactsRes.data?.data?.length || 0,
         reservations: reservationsRes.data?.data?.length || 0,
+        chats: 3, // TODO: Replace with actual API call when backend is ready
         activities: activitiesRes.data?.data?.length || 0,
         recentActivities: activitiesRes.data?.data || [],
       });
@@ -59,6 +81,7 @@ const Dashboard: React.FC = () => {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -68,11 +91,19 @@ const Dashboard: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
-            <p className="text-gray-600 mt-1">Welcome back! Here's what's happening with Globalix.</p>
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+              Dashboard Overview
+              {isRefreshing && (
+                <span className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                  Updating...
+                </span>
+              )}
+            </h1>
+            <p className="text-gray-600 mt-1">Welcome back! Real-time data • Auto-updates every 5s</p>
           </div>
           <button
-            onClick={fetchDashboardData}
+            onClick={() => fetchDashboardData(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition"
           >
             🔄 Refresh
@@ -135,6 +166,16 @@ const Dashboard: React.FC = () => {
                     <div className="text-3xl font-bold">{stats?.reservations || 0}</div>
                   </div>
                   <div className="text-pink-100 font-medium">Reservations</div>
+                </div>
+              </Link>
+
+              <Link href="/chats">
+                <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 text-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all transform hover:scale-105 cursor-pointer">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-4xl">💬</span>
+                    <div className="text-3xl font-bold">{stats?.chats || 0}</div>
+                  </div>
+                  <div className="text-cyan-100 font-medium">Chats</div>
                 </div>
               </Link>
 
@@ -263,100 +304,6 @@ const Dashboard: React.FC = () => {
             </div>
           </>
         )}
-      </div>
-    </Layout>
-  );
-};
-
-export default Dashboard;
-            trend={12}
-            color="blue"
-          />
-          <StatCard
-            title="Active Users"
-            value={stats?.activeUsers || 0}
-            icon={<TrendingUp size={32} />}
-            trend={8}
-            color="green"
-          />
-          <StatCard
-            title="Total Earnings"
-            value={`$${(stats?.totalEarnings || 0).toLocaleString('en-US', {
-              maximumFractionDigits: 2,
-            })}`}
-            icon={<DollarSign size={32} />}
-            trend={15}
-            color="purple"
-          />
-          <StatCard
-            title="Inquiries"
-            value={stats?.totalInquiries || 0}
-            icon={<MessageSquare size={32} />}
-            trend={5}
-            color="orange"
-          />
-        </div>
-
-        {/* Secondary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">Quick Stats</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">New Signups Today</span>
-                <span className="text-2xl font-bold text-green-600">{stats?.newSignups || 0}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Total Logins</span>
-                <span className="text-2xl font-bold text-blue-600">{stats?.totalLogins || 0}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Conversion Rate</span>
-                <span className="text-2xl font-bold text-purple-600">4.2%</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">Recent Activity</h3>
-            <div className="space-y-2">
-              {recentActivity.slice(0, 4).map((activity, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between text-sm p-2 hover:bg-gray-50 rounded"
-                >
-                  <span className="text-gray-700">{activity.action}</span>
-                  <span className="text-gray-500 text-xs">
-                    {new Date(activity.timestamp).toLocaleTimeString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Call to Action */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg shadow p-8">
-          <h3 className="text-2xl font-bold mb-2">Manage Your Platform</h3>
-          <p className="text-blue-100 mb-6">
-            Monitor activities, view analytics, manage users, and track earnings all in one place.
-          </p>
-          <div className="flex gap-4 flex-wrap">
-            <a
-              href="/activity"
-              className="bg-white text-blue-600 hover:bg-gray-100 font-semibold py-2 px-6 rounded-lg transition"
-            >
-              View All Activities
-            </a>
-            <a
-              href="/earnings"
-              className="bg-blue-500 hover:bg-blue-400 text-white font-semibold py-2 px-6 rounded-lg transition"
-            >
-              Check Earnings
-            </a>
-          </div>
-        </div>
       </div>
     </Layout>
   );

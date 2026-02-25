@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
 import { Layout } from '../components/Layout';
 import { adminApi } from '../api/adminClient';
 import { useAdmin } from '../context/AdminContext';
@@ -15,32 +14,118 @@ interface ChartData {
 }
 
 const AnalyticsPage: React.FC = () => {
-  const router = useRouter();
-  const { token } = useAdmin();
+  const { token: _token } = useAdmin();
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [days, setDays] = useState(30);
+  const [_stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetchAnalytics();
+    fetchAnalytics(true); // Initial load with loading state
+    // Auto-refresh every 5 seconds without loading state
+    const interval = setInterval(() => fetchAnalytics(false), 5000);
+    return () => clearInterval(interval);
   }, [days]);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = async (showLoading = true) => {
     try {
-      setLoading(true);
-      const response = await adminApi.getAnalytics(days);
-      if (response.data && Array.isArray(response.data.data)) {
-        setChartData(response.data.data);
-      } else if (Array.isArray(response.data)) {
-        setChartData(response.data);
+      if (showLoading) {
+        setLoading(true);
       } else {
-        setChartData([]);
+        setIsRefreshing(true);
       }
+      
+      // Fetch real data from backend
+      const [usersRes, activitiesRes, reservationsRes] = await Promise.all([
+        adminApi.getUsers(1000, 0).catch(() => ({ data: { data: [], total: 0 } })),
+        adminApi.getActivity({ limit: 1000 }).catch(() => ({ data: { data: [] } })),
+        adminApi.getReservations({ limit: 1000 }).catch(() => ({ data: { data: [] } })),
+      ]);
+
+      const users = usersRes.data?.data || [];
+      const activities = activitiesRes.data?.data || [];
+      const reservations = reservationsRes.data?.data || [];
+
+      // Process data by date
+      const dateMap = new Map<string, any>();
+      const today = new Date();
+      
+      // Initialize dates
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateKey = date.toISOString().split('T')[0];
+        dateMap.set(dateKey, {
+          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          users: 0,
+          earnings: 0,
+          inquiries: 0,
+          logins: 0,
+        });
+      }
+
+      // Count users by creation date
+      users.forEach((user: any) => {
+        const dateKey = new Date(user.createdAt).toISOString().split('T')[0];
+        if (dateMap.has(dateKey)) {
+          const data = dateMap.get(dateKey);
+          data.users += 1;
+        }
+      });
+
+      // Count activities
+      activities.forEach((activity: any) => {
+        const dateKey = new Date(activity.timestamp || activity.createdAt).toISOString().split('T')[0];
+        if (dateMap.has(dateKey)) {
+          const data = dateMap.get(dateKey);
+          if (activity.type === 'login') {
+            data.logins += 1;
+          } else if (activity.type === 'inquiry' || activity.type.includes('inquiry')) {
+            data.inquiries += 1;
+          }
+        }
+      });
+
+      // Calculate earnings from reservations
+      reservations.forEach((reservation: any) => {
+        if (reservation.status === 'Completed') {
+          const dateKey = new Date(reservation.createdAt).toISOString().split('T')[0];
+          if (dateMap.has(dateKey)) {
+            const data = dateMap.get(dateKey);
+            data.earnings += Number(reservation.totalPrice) || 0;
+          }
+        }
+      });
+
+      const chartDataArray = Array.from(dateMap.values());
+      setChartData(chartDataArray);
+
+      // Calculate real stats
+      const completedReservations = reservations.filter((r: any) => r.status === 'Completed');
+      const totalEarnings = completedReservations.reduce((sum: number, r: any) => sum + (Number(r.totalPrice) || 0), 0);
+      
+      const now = new Date();
+      const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const newUsersThisMonth = users.filter((u: any) => new Date(u.createdAt) >= firstOfMonth).length;
+      
+      setStats({
+        totalUsers: users.length,
+        activeUsers: users.filter((u: any) => (u.status || 'active') === 'active').length,
+        newUsersThisMonth,
+        totalEarnings,
+        totalActivities: activities.length,
+        totalReservations: reservations.length,
+        completedReservations: completedReservations.length,
+      });
     } catch (error: any) {
       console.error('Failed to fetch analytics:', error);
-      setChartData([]);
+      if (chartData.length === 0) {
+        setChartData([]);
+      }
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -50,8 +135,16 @@ const AnalyticsPage: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Analytics</h1>
-            <p className="text-gray-600 mt-1">View platform performance and trends</p>
+            <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+              Analytics
+              {isRefreshing && (
+                <span className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                  Refreshing...
+                </span>
+              )}
+            </h1>
+            <p className="text-gray-600 mt-1">Real-time platform performance • Auto-updates every 5s</p>
           </div>
           <div className="flex gap-2">
             {[7, 14, 30, 90].map((d) => (

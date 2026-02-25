@@ -12,6 +12,17 @@ declare global {
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({
+        success: false,
+        error: {
+          code: 'AUTH_CONFIG_MISSING',
+          message: 'JWT secret is not configured',
+          statusCode: 500,
+        },
+      });
+    }
+
     const token = req.headers.authorization?.split(' ')[1];
 
     if (!token) {
@@ -25,9 +36,9 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.userId = (decoded as any).userId;
-    next();
+    return next();
   } catch (error) {
     return res.status(401).json({
       success: false,
@@ -42,15 +53,20 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
 
 export const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
   try {
+    void res;
+    if (!process.env.JWT_SECRET) {
+      return next();
+    }
+
     const token = req.headers.authorization?.split(' ')[1];
 
     if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.userId = (decoded as any).userId;
     }
   } catch (error) {
     // Optional auth, so we don't fail if token is invalid
   }
 
-  next();
+  return next();
 };

@@ -1,10 +1,16 @@
 import axios from 'axios';
 
-const ADMIN_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-const GLOBALIX_API_URL = process.env.NEXT_PUBLIC_GLOBALIX_API_URL || 'http://localhost:3002';
+const ADMIN_API_URL =
+  process.env.NEXT_PUBLIC_ADMIN_API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  'http://localhost:3002/admin/api';
+const GLOBALIX_API_URL =
+  process.env.NEXT_PUBLIC_GLOBALIX_API_URL ||
+  'http://localhost:3002/api/v1';
+const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID;
 
 const adminClient = axios.create({
-  baseURL: `${ADMIN_API_URL}/admin/api`,
+  baseURL: `${ADMIN_API_URL}`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -12,7 +18,7 @@ const adminClient = axios.create({
 
 // Separate client for globalix-group-backend (main API)
 const globalixClient = axios.create({
-  baseURL: `${GLOBALIX_API_URL}/api/v1`,
+  baseURL: `${GLOBALIX_API_URL}`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -24,13 +30,27 @@ adminClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  if (TENANT_ID) {
+    config.headers['x-tenant-id'] = TENANT_ID;
+  }
+  return config;
+});
+
+globalixClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('adminToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  if (TENANT_ID) {
+    config.headers['x-tenant-id'] = TENANT_ID;
+  }
   return config;
 });
 
 export const adminApi = {
   // Auth
   login: (email: string, password: string) =>
-    adminClient.post('/login', { email, password }),
+    adminClient.post('/admin/login', { email, password }),
   
   // Dashboard
   getDashboard: () => adminClient.get('/dashboard'),
@@ -75,7 +95,13 @@ export const adminApi = {
   
   // Users
   getUsers: (limit?: number, offset?: number, search?: string) =>
-    adminClient.get('/users', { params: { limit, offset, search } }),
+    globalixClient.get('/admin/users', { params: { limit: limit || 20, offset: offset || 0, search } }),
+  deleteUser: (userId: string) => globalixClient.delete(`/admin/users/${userId}`),
+
+  // Chats
+  getAllUserChats: () => globalixClient.get('/admin/chats'),
+  sendChatMessage: (userId: string, message: string) =>
+    globalixClient.post('/admin/chats', { userId, message }),
   
   // Auth Stats
   getAuthStats: () => adminClient.get('/auth-stats'),

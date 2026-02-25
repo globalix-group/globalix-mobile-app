@@ -1,5 +1,4 @@
 import { Sequelize } from 'sequelize';
-import path from 'path';
 
 const sequelize = new Sequelize({
   dialect: 'postgres',

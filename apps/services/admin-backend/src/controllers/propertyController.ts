@@ -15,13 +15,13 @@ export class PropertyController {
         maxPrice ? parseInt(maxPrice as string) : undefined
       );
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: result.data,
         pagination: result.pagination,
       });
     } catch (error: any) {
-      res.status(error.statusCode || 500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         error: {
           code: error.code || 'ERROR',
@@ -38,12 +38,12 @@ export class PropertyController {
 
       const property = await PropertyService.getPropertyById(id);
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: property,
       });
     } catch (error: any) {
-      res.status(error.statusCode || 500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         error: {
           code: error.code || 'ERROR',
@@ -69,12 +69,12 @@ export class PropertyController {
 
       const property = await PropertyService.createProperty(req.body, req.userId);
 
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         data: property,
       });
     } catch (error: any) {
-      res.status(error.statusCode || 500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         error: {
           code: error.code || 'ERROR',
@@ -101,12 +101,12 @@ export class PropertyController {
       const { id } = req.params;
       const property = await PropertyService.updateProperty(id, req.body, req.userId);
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: property,
       });
     } catch (error: any) {
-      res.status(error.statusCode || 500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         error: {
           code: error.code || 'ERROR',
@@ -133,12 +133,12 @@ export class PropertyController {
       const { id } = req.params;
       const result = await PropertyService.deleteProperty(id, req.userId);
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: result,
       });
     } catch (error: any) {
-      res.status(error.statusCode || 500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         error: {
           code: error.code || 'ERROR',
@@ -153,12 +153,12 @@ export class PropertyController {
     try {
       const properties = await PropertyService.getPropertiesForMap(req.query as any);
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: properties,
       });
     } catch (error: any) {
-      res.status(error.statusCode || 500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         error: {
           code: error.code || 'ERROR',
@@ -186,12 +186,12 @@ export class PropertyController {
 
       const properties = await PropertyService.searchProperties(q as string);
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: properties,
       });
     } catch (error: any) {
-      res.status(error.statusCode || 500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         error: {
           code: error.code || 'ERROR',
@@ -204,14 +204,15 @@ export class PropertyController {
 
   static async getPropertyCategories(req: Request, res: Response) {
     try {
+      void req;
       const categories = await PropertyService.getPropertyCategories();
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: categories,
       });
     } catch (error: any) {
-      res.status(error.statusCode || 500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         error: {
           code: error.code || 'ERROR',

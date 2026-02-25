@@ -1,18 +1,17 @@
 import express, { Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import { upload } from '../config/multer';
+import { uploadMedia } from '../controllers/media.controller';
+import { adminAuthMiddleware } from '../middleware/adminAuth';
 
 const adminRouter = express.Router();
 
-// Mock admin users (in production, query from database)
-const adminUsers = [
-  {
-    id: '1',
-    email: 'admin@globalix.com',
-    password: '$2b$10$YourHashedPasswordHere', // Password: admin123
-    name: 'Admin User',
-    role: 'superadmin',
-  },
-];
+// Admin credentials must be provided via environment variables
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Mock activity logs
 const activityLogs = [
@@ -42,8 +41,19 @@ const dashboardStats = {
 };
 
 // ===== ADMIN LOGIN =====
-adminRouter.post('/login', async (req: Request, res: Response) => {
+const adminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+adminRouter.post('/login', adminLoginLimiter, async (req: Request, res: Response) => {
   try {
+    if (!ADMIN_EMAIL || !ADMIN_PASSWORD_HASH || !JWT_SECRET) {
+      return res.status(500).json({ error: 'Admin auth configuration missing' });
+    }
+
     const { email, password } = req.body;
 
     // Validate input
@@ -51,34 +61,38 @@ adminRouter.post('/login', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // For demo purposes, accept specific credentials
-    if (email === 'admin@globalix.com' && password === 'admin123') {
-      const token = jwt.sign(
-        { id: '1', email: 'admin@globalix.com', role: 'superadmin' },
-        process.env.JWT_SECRET || 'your-secret-key',
-        { expiresIn: '24h' }
-      );
-
-      return res.json({
-        success: true,
-        token,
-        admin: {
-          id: '1',
-          email: 'admin@globalix.com',
-          name: 'Admin User',
-          role: 'superadmin',
-        },
-      });
+    if (email !== ADMIN_EMAIL) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    return res.status(401).json({ error: 'Invalid credentials' });
+    const isValidPassword = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+      { id: '1', email: ADMIN_EMAIL, role: 'superadmin' },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    return res.json({
+      success: true,
+      token,
+      admin: {
+        id: '1',
+        email: ADMIN_EMAIL,
+        name: 'Admin User',
+        role: 'superadmin',
+      },
+    });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
 });
 
 // ===== GET DASHBOARD STATS =====
-adminRouter.get('/dashboard', (req: Request, res: Response) => {
+adminRouter.get('/dashboard', adminAuthMiddleware, (req: Request, res: Response) => {
   try {
     return res.json({
       stats: dashboardStats,
@@ -90,7 +104,7 @@ adminRouter.get('/dashboard', (req: Request, res: Response) => {
 });
 
 // ===== GET ACTIVITY LOGS =====
-adminRouter.get('/activity', (req: Request, res: Response) => {
+adminRouter.get('/activity', adminAuthMiddleware, (req: Request, res: Response) => {
   try {
     const { limit = 50, offset = 0, type, startDate, endDate } = req.query;
 
@@ -129,7 +143,7 @@ adminRouter.get('/activity', (req: Request, res: Response) => {
 });
 
 // ===== GET EARNINGS/TRANSACTIONS =====
-adminRouter.get('/earnings', (req: Request, res: Response) => {
+adminRouter.get('/earnings', adminAuthMiddleware, (req: Request, res: Response) => {
   try {
     const { period = 'all' } = req.query; // all, today, week, month
 
@@ -171,7 +185,7 @@ adminRouter.get('/earnings', (req: Request, res: Response) => {
 });
 
 // ===== GET ANALYTICS DATA FOR CHARTS =====
-adminRouter.get('/analytics', (req: Request, res: Response) => {
+adminRouter.get('/analytics', adminAuthMiddleware, (req: Request, res: Response) => {
   try {
     const { days = 30 } = req.query;
 
@@ -202,7 +216,7 @@ adminRouter.get('/analytics', (req: Request, res: Response) => {
 });
 
 // ===== GET USERS LIST =====
-adminRouter.get('/users', (req: Request, res: Response) => {
+adminRouter.get('/users', adminAuthMiddleware, (req: Request, res: Response) => {
   try {
     const { limit = 20, offset = 0, search } = req.query;
 
@@ -238,7 +252,7 @@ adminRouter.get('/users', (req: Request, res: Response) => {
 });
 
 // ===== GET SIGN IN/SIGN UP STATISTICS =====
-adminRouter.get('/auth-stats', (req: Request, res: Response) => {
+adminRouter.get('/auth-stats', adminAuthMiddleware, (req: Request, res: Response) => {
   void req;
   try {
     const signups = activityLogs.filter((log) => log.type === 'signup');
@@ -253,6 +267,14 @@ adminRouter.get('/auth-stats', (req: Request, res: Response) => {
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
+});
+
+// ===== ADMIN MEDIA UPLOAD =====
+adminRouter.post('/media/upload', adminAuthMiddleware, upload.single('media'), (req: Request, res: Response) => {
+  // Create a mock user context for admin uploads
+  (req as any).user = { userId: 'admin', role: 'admin' };
+  req.userId = 'admin';
+  return uploadMedia(req, res);
 });
 
 export default adminRouter;

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { AuthService } from '../services/authService';
-import { body, validationResult } from 'express-validator';
+import { validationResult } from 'express-validator';
 
 export class AuthController {
   static async login(req: Request, res: Response) {
@@ -9,12 +9,12 @@ export class AuthController {
 
       const result = await AuthService.login(email, password);
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: result,
       });
     } catch (error: any) {
-      res.status(error.statusCode || 500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         error: {
           code: error.code || 'AUTH_ERROR',
@@ -44,12 +44,12 @@ export class AuthController {
 
       const result = await AuthService.register(email, password, name);
 
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         data: result,
       });
     } catch (error: any) {
-      res.status(error.statusCode || 500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         error: {
           code: error.code || 'AUTH_ERROR',
@@ -77,12 +77,12 @@ export class AuthController {
 
       const result = await AuthService.refreshToken(refreshToken);
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: result,
       });
     } catch (error: any) {
-      res.status(error.statusCode || 500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         error: {
           code: error.code || 'AUTH_ERROR',
@@ -99,12 +99,12 @@ export class AuthController {
 
       const result = await AuthService.forgotPassword(email);
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: result,
       });
     } catch (error: any) {
-      res.status(error.statusCode || 500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         error: {
           code: error.code || 'AUTH_ERROR',
@@ -121,12 +121,12 @@ export class AuthController {
 
       const result = await AuthService.appleSignIn(identityToken);
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: result,
       });
     } catch (error: any) {
-      res.status(error.statusCode || 500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         error: {
           code: error.code || 'AUTH_ERROR',
@@ -143,12 +143,12 @@ export class AuthController {
 
       const result = await AuthService.googleSignIn(idToken);
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: result,
       });
     } catch (error: any) {
-      res.status(error.statusCode || 500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         error: {
           code: error.code || 'AUTH_ERROR',
@@ -161,7 +161,8 @@ export class AuthController {
 
   static async logout(req: Request, res: Response) {
     // In production, implement token blacklisting
-    res.status(200).json({
+    void req;
+    return res.status(200).json({
       success: true,
       data: { message: 'Logged out successfully' },
     });

@@ -11,17 +11,23 @@ interface AdminContextType {
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Bypass authentication - set default admin token
-  const [token, setToken] = useState<string | null>('dev-token-bypass');
-  const [admin, setAdmin] = useState<any>({
-    id: 'admin-1',
-    email: 'admin@globalix.com',
-    name: 'Admin',
-    role: 'administrator'
-  });
+  const [token, setToken] = useState<string | null>(null);
+  const [admin, setAdmin] = useState<any>(null);
 
   useEffect(() => {
-    // Skip localStorage checks for development
+    // Restore admin data from localStorage on mount
+    const storedToken = localStorage.getItem('adminToken');
+    const storedUser = localStorage.getItem('adminUser');
+    
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      try {
+        setAdmin(JSON.parse(storedUser));
+      } catch (e) {
+        console.error('Failed to parse stored admin user:', e);
+        localStorage.removeItem('adminUser');
+      }
+    }
   }, []);
 
   const logout = () => {

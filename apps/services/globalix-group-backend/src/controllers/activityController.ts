@@ -7,15 +7,17 @@ export const ActivityController = {
    */
   logActivity: (req: Request, res: Response) => {
     try {
-      const { userId, action, type, metadata } = req.body;
+      const { action, type, metadata } = req.body;
+      const userId = req.userId;
+      const tenantId = req.tenantId;
 
-      if (!userId || !action || !type) {
+      if (!tenantId || !userId || !action || !type) {
         return res.status(400).json({
-          error: 'userId, action, and type are required',
+          error: 'action and type are required',
         });
       }
 
-      ActivityLogger.log(userId, action, type, metadata);
+      ActivityLogger.log(tenantId, userId, action, type, metadata);
 
       return res.json({
         success: true,
@@ -36,7 +38,12 @@ export const ActivityController = {
       const offset = parseInt(req.query.offset as string) || 0;
       const type = req.query.type as string | undefined;
 
-      const result = ActivityLogger.getLogs(limit, offset, type);
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        return res.status(400).json({ error: 'tenantId is required' });
+      }
+
+      const result = ActivityLogger.getLogs(tenantId, limit, offset, type);
 
       return res.json({
         success: true,

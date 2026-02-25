@@ -1,12 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 
 export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
+  void req;
+  void next;
   console.error('Error:', err);
 
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
 
-  res.status(statusCode).json({
+  return res.status(statusCode).json({
     success: false,
     error: {
       code: err.code || 'INTERNAL_ERROR',
@@ -17,7 +19,7 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
 };
 
 export const notFoundHandler = (req: Request, res: Response) => {
-  res.status(404).json({
+  return res.status(404).json({
     success: false,
     error: {
       code: 'NOT_FOUND',

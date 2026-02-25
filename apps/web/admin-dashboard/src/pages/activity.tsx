@@ -14,23 +14,24 @@ interface Activity {
 }
 
 const ActivityPage: React.FC = () => {
-  const { token } = useAdmin();
+  const { token: _token } = useAdmin();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [_isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [pagination, setPagination] = useState({ offset: 0, limit: 50 });
+  const [pagination, _setPagination] = useState({ offset: 0, limit: 50 });
   const [lastFetch, setLastFetch] = useState<Date | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    fetchActivities();
+    fetchActivities(true);
     
-    // Auto-refresh activities every 2 seconds if enabled
+    // Auto-refresh activities every 5 seconds if enabled
     if (autoRefresh) {
-      intervalRef.current = setInterval(fetchActivities, 2000);
+      intervalRef.current = setInterval(() => fetchActivities(false), 5000);
     }
     
     return () => {
@@ -40,14 +41,23 @@ const ActivityPage: React.FC = () => {
     };
   }, [typeFilter, pagination, autoRefresh]);
 
-  const fetchActivities = async () => {
+  const fetchActivities = async (showLoading = true) => {
     try {
+      if (showLoading) {
+        setLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
       setError(null);
-      const response = await adminApi.getActivity(
-        pagination.limit,
-        pagination.offset,
-        typeFilter || undefined
-      );
+      const params: any = {
+        limit: pagination.limit,
+        offset: pagination.offset,
+      };
+      if (typeFilter) {
+        params.type = typeFilter;
+      }
+      
+      const response = await adminApi.getActivity(params);
       
       if (response.data) {
         // Handle different response formats
@@ -71,6 +81,7 @@ const ActivityPage: React.FC = () => {
       // Don't clear activities on error, keep showing last known state
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -138,7 +149,7 @@ const ActivityPage: React.FC = () => {
             </button>
             
             <button
-              onClick={fetchActivities}
+              onClick={() => fetchActivities()}
               disabled={loading}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
@@ -156,7 +167,7 @@ const ActivityPage: React.FC = () => {
               <p className="font-semibold text-red-800">Error fetching activities</p>
               <p className="text-sm text-red-600 mt-1">{error}</p>
               <button
-                onClick={fetchActivities}
+                onClick={() => fetchActivities()}
                 className="text-sm text-red-700 underline mt-2 hover:text-red-800"
               >
                 Try again

@@ -1,19 +1,34 @@
 import { User } from '../models';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
+import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 
 export class AuthService {
+  private static requireSecret(name: 'JWT_SECRET' | 'JWT_REFRESH_SECRET'): Secret {
+    const value = process.env[name];
+    if (!value) {
+      throw {
+        statusCode: 500,
+        code: 'CONFIG_MISSING',
+        message: `${name} is not configured`,
+      };
+    }
+    return value as Secret;
+  }
+
   static generateTokens(userId: string) {
+    const tokenExpiry = process.env.JWT_EXPIRY || '1h';
+    const refreshExpiry = process.env.JWT_REFRESH_EXPIRY || '7d';
+    const tokenOptions: SignOptions = { expiresIn: tokenExpiry as SignOptions['expiresIn'] };
+    const refreshOptions: SignOptions = { expiresIn: refreshExpiry as SignOptions['expiresIn'] };
     const token = jwt.sign(
       { userId },
-      process.env.JWT_SECRET || 'secret',
-      { expiresIn: process.env.JWT_EXPIRY || '1h' }
+      AuthService.requireSecret('JWT_SECRET'),
+      tokenOptions
     );
 
     const refreshToken = jwt.sign(
       { userId },
-      process.env.JWT_REFRESH_SECRET || 'refresh_secret',
-      { expiresIn: process.env.JWT_REFRESH_EXPIRY || '7d' }
+      AuthService.requireSecret('JWT_REFRESH_SECRET'),
+      refreshOptions
     );
 
     return { token, refreshToken };
@@ -88,7 +103,7 @@ export class AuthService {
     try {
       const decoded = jwt.verify(
         refreshToken,
-        process.env.JWT_REFRESH_SECRET || 'refresh_secret'
+        AuthService.requireSecret('JWT_REFRESH_SECRET')
       ) as any;
 
       const user = await User.findByPk(decoded.userId);
@@ -123,7 +138,7 @@ export class AuthService {
     // Generate reset token (valid for 1 hour)
     const resetToken = jwt.sign(
       { userId: user.id, type: 'password_reset' },
-      process.env.JWT_SECRET || 'secret',
+      AuthService.requireSecret('JWT_SECRET'),
       { expiresIn: '1h' }
     );
 
@@ -134,6 +149,7 @@ export class AuthService {
   }
 
   static async appleSignIn(identityToken: string) {
+    void identityToken;
     // In production, validate Apple identity token
     // For now, create or get user from Apple ID
     // This should be implemented with proper Apple token validation
@@ -144,6 +160,7 @@ export class AuthService {
   }
 
   static async googleSignIn(idToken: string) {
+    void idToken;
     // In production, validate Google ID token
     // For now, create or get user from Google ID
     // This should be implemented with proper Google token validation

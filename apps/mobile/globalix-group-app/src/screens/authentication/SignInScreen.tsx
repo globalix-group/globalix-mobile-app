@@ -122,15 +122,17 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
         await setAuthTokens(token, refreshToken);
       }
 
-      // Log activity to backend (non-blocking)
-      Promise.resolve().then(() => {
-        activityApi.logActivity(
+      // Log activity to backend after tokens are set
+      try {
+        await activityApi.logActivity(
           user?.id || `user-${email.split('@')[0]}`,
           `User login: ${user?.name || email}`,
           'login',
           { email }
-        ).catch((err) => console.warn('Activity log failed:', err));
-      });
+        );
+      } catch (err) {
+        console.warn('Activity log failed:', err);
+      }
 
       await login();
     } catch (error: any) {

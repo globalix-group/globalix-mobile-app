@@ -38,7 +38,7 @@ app.use(compression());
 app.use(morgan('combined'));
 app.use(
   cors({
-    origin: (origin, callback) => {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       if (!origin || allowedOrigins.length === 0) {
         return callback(null, true);
       }
@@ -76,6 +76,7 @@ app.use('/api/v1', routes);
 
 // ===== HEALTH CHECK =====
 app.get('/health', (req, res) => {
+  void req;
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),

@@ -31,11 +31,16 @@ const ReservationsPage: React.FC = () => {
       setLoading(true);
       setError(null);
       const response = await adminApi.getReservations({ limit: 100 });
-      if (response.data.success && response.data.data) {
-        setReservations(response.data.data);
+      const reservationsData = response.data?.data || response.data?.reservations || [];
+      if (Array.isArray(reservationsData)) {
+        setReservations(reservationsData);
+      } else {
+        setReservations([]);
       }
     } catch (err: any) {
+      console.error('Reservations fetch error:', err);
       setError(err.response?.data?.message || 'Failed to fetch reservations');
+      setReservations([]);
     } finally {
       setLoading(false);
     }
@@ -55,19 +60,19 @@ const ReservationsPage: React.FC = () => {
     }
   };
 
-  const filteredReservations = reservations.filter(
+  const filteredReservations = (reservations || []).filter(
     (reservation) => !statusFilter || reservation.status === statusFilter
   );
 
   const stats = {
-    total: reservations.length,
-    pending: reservations.filter((r) => r.status === 'Pending').length,
-    confirmed: reservations.filter((r) => r.status === 'Confirmed').length,
-    completed: reservations.filter((r) => r.status === 'Completed').length,
-    cancelled: reservations.filter((r) => r.status === 'Cancelled').length,
+    total: (reservations || []).length,
+    pending: (reservations || []).filter((r) => r.status === 'Pending').length,
+    confirmed: (reservations || []).filter((r) => r.status === 'Confirmed').length,
+    completed: (reservations || []).filter((r) => r.status === 'Completed').length,
+    cancelled: (reservations || []).filter((r) => r.status === 'Cancelled').length,
   };
 
-  const totalRevenue = reservations
+  const totalRevenue = (reservations || [])
     .filter((r) => r.status === 'Completed')
     .reduce((sum, r) => sum + Number(r.totalPrice), 0);
 

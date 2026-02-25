@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
 import { Layout } from '../components/Layout';
 import { adminApi } from '../api/adminClient';
 import { useAdmin } from '../context/AdminContext';
-import { Search, Shield, MoreVertical } from 'lucide-react';
+import { Search, Trash2, X } from 'lucide-react';
 
 interface User {
   id: string;
@@ -14,13 +13,14 @@ interface User {
 }
 
 const UsersPage: React.FC = () => {
-  const router = useRouter();
-  const { token } = useAdmin();
+  const { token: _token } = useAdmin();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [pagination, setPagination] = useState({ offset: 0, limit: 20 });
   const [total, setTotal] = useState(0);
+  const [deleteModal, setDeleteModal] = useState<{ show: boolean; user: User | null }>({ show: false, user: null });
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -64,6 +64,24 @@ const UsersPage: React.FC = () => {
       suspended: { bg: 'bg-red-100', text: 'text-red-800' },
     };
     return badges[status] || { bg: 'bg-gray-100', text: 'text-gray-800' };
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteModal.user) return;
+
+    try {
+      setDeleting(true);
+      await adminApi.deleteUser(deleteModal.user.id);
+      setDeleteModal({ show: false, user: null });
+      // Refresh users list
+      await fetchUsers();
+      alert('User deleted successfully');
+    } catch (error: any) {
+      console.error('Failed to delete user:', error);
+      alert(error.response?.data?.message || 'Failed to delete user');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -147,15 +165,19 @@ const UsersPage: React.FC = () => {
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-semibold ${statusBadge.bg} ${statusBadge.text}`}
                           >
-                            {user.status.toUpperCase()}
+                            {(user.status || 'active').toUpperCase()}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
                           {new Date(user.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 text-sm">
-                          <button className="p-2 hover:bg-gray-100 rounded-lg transition">
-                            <MoreVertical size={18} className="text-gray-600" />
+                          <button 
+                            onClick={() => setDeleteModal({ show: true, user })}
+                            className="p-2 hover:bg-red-50 rounded-lg transition group"
+                            title="Delete user"
+                          >
+                            <Trash2 size={18} className="text-gray-600 group-hover:text-red-600" />
                           </button>
                         </td>
                       </tr>
@@ -207,20 +229,74 @@ const UsersPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           <div className="bg-green-50 rounded-lg p-6 border border-green-200">
             <p className="text-green-600 font-semibold text-sm">Active Users</p>
-            <p className="text-3xl font-bold text-green-900 mt-2">1,250</p>
-            <p className="text-green-700 text-xs mt-2">↑ 12% from last month</p>
+            <p className="text-3xl font-bold text-green-900 mt-2">{users.filter(u => (u.status || 'active') === 'active').length}</p>
+            <p className="text-green-700 text-xs mt-2">{total > 0 ? `${Math.round((users.filter(u => (u.status || 'active') === 'active').length / total) * 100)}% of total` : 'No users yet'}</p>
           </div>
           <div className="bg-yellow-50 rounded-lg p-6 border border-yellow-200">
             <p className="text-yellow-600 font-semibold text-sm">Inactive Users</p>
-            <p className="text-3xl font-bold text-yellow-900 mt-2">380</p>
-            <p className="text-yellow-700 text-xs mt-2">30% haven't logged in</p>
+            <p className="text-3xl font-bold text-yellow-900 mt-2">{users.filter(u => u.status === 'inactive').length}</p>
+            <p className="text-yellow-700 text-xs mt-2">{total > 0 ? `${Math.round((users.filter(u => u.status === 'inactive').length / total) * 100)}% of total` : 'No inactive users'}</p>
           </div>
           <div className="bg-red-50 rounded-lg p-6 border border-red-200">
             <p className="text-red-600 font-semibold text-sm">Suspended Users</p>
-            <p className="text-3xl font-bold text-red-900 mt-2">25</p>
-            <p className="text-red-700 text-xs mt-2">Requires admin review</p>
+            <p className="text-3xl font-bold text-red-900 mt-2">{users.filter(u => u.status === 'suspended').length}</p>
+            <p className="text-red-700 text-xs mt-2">{users.filter(u => u.status === 'suspended').length > 0 ? 'Requires admin review' : 'All users in good standing'}</p>
           </div>
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {deleteModal.show && deleteModal.user && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Delete User</h3>
+                  <p className="text-sm text-gray-600 mt-1">This action cannot be undone</p>
+                </div>
+                <button
+                  onClick={() => setDeleteModal({ show: false, user: null })}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <X size={20} className="text-gray-600" />
+                </button>
+              </div>
+
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-red-800">
+                  You are about to permanently delete <strong>{deleteModal.user.name}</strong> ({deleteModal.user.email}).
+                  All associated data will be removed from the database.
+                </p>
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setDeleteModal({ show: false, user: null })}
+                  disabled={deleting}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteUser}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium disabled:opacity-50 flex items-center gap-2"
+                >
+                  {deleting ? (
+                    <>
+                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={16} />
+                      Delete User
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

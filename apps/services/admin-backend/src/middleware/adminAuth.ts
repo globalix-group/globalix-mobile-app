@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Extend Express Request to include admin data
 declare global {
@@ -25,6 +25,11 @@ export const adminAuthMiddleware = (
   next: NextFunction
 ): void => {
   try {
+    if (!JWT_SECRET) {
+      res.status(500).json({ error: 'JWT secret is not configured' });
+      return;
+    }
+
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -41,7 +46,7 @@ export const adminAuthMiddleware = (
       };
 
       // Ensure it's actually an admin token
-      if (decoded.role !== 'admin') {
+      if (decoded.role !== 'admin' && decoded.role !== 'superadmin') {
         res.status(403).json({ error: 'Insufficient permissions' });
         return;
       }

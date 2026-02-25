@@ -29,6 +29,9 @@
     },
     "plugins": [
       "@react-native-google-signin/google-signin"
-    ]
+    ],
+    "extra": {
+      "apiBaseUrl": "http://10.128.76.15:3002/api/v1"
+    }
   }
 }

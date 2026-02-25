@@ -342,7 +342,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       style={[styles.container, { backgroundColor: theme.background }]}
       edges={['top']}
     >
-      <GlobalixHeader subtitle="Premium Real Estate" />
+      <GlobalixHeader subtitle="Premium Real Estate" showSearch={true} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

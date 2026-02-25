@@ -28,17 +28,21 @@ const ContactsPage: React.FC = () => {
       setLoading(true);
       setError(null);
       const response = await adminApi.getContacts({ limit: 100 });
-      if (response.data.success && response.data.data) {
-        setContacts(response.data.data);
+      const contactsData = response.data?.data || response.data?.contacts || [];
+      if (Array.isArray(contactsData)) {
+        setContacts(contactsData);
+      } else {
+        setContacts([]);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch contacts');
+      setContacts([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredContacts = contacts.filter((contact) => {
+  const filteredContacts = (contacts || []).filter((contact) => {
     const matchesResolved =
       !resolvedFilter ||
       (resolvedFilter === 'resolved' && contact.isResolved) ||

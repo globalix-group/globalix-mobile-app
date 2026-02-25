@@ -2,10 +2,340 @@ import { DataTypes, Model } from 'sequelize';
 import sequelize from '../config/database';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+import ChatMessage from './ChatMessage';
+import UserMedia from './UserMedia';
+
+// ===== TENANT MODEL =====
+export class Tenant extends Model {
+  declare id: string;
+  declare name: string;
+  declare status: 'active' | 'suspended' | 'archived';
+  declare planId: string | null;
+  declare branding: Record<string, any> | null;
+  declare dataRetentionPolicy: string | null;
+  declare createdAt: Date;
+  declare updatedAt: Date;
+}
+
+Tenant.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: () => uuidv4(),
+      primaryKey: true,
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    status: {
+      type: DataTypes.ENUM('active', 'suspended', 'archived'),
+      defaultValue: 'active',
+    },
+    planId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    branding: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+    },
+    dataRetentionPolicy: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+  },
+  {
+    sequelize,
+    modelName: 'Tenant',
+    tableName: 'tenants',
+  }
+);
+
+// ===== PLAN MODEL =====
+export class Plan extends Model {
+  declare id: string;
+  declare name: string;
+  declare stripePriceIdMonthly: string | null;
+  declare stripePriceIdAnnual: string | null;
+  declare priceMonthly: number;
+  declare priceAnnual: number;
+  declare limits: Record<string, any>;
+  declare features: Record<string, any>;
+  declare createdAt: Date;
+  declare updatedAt: Date;
+}
+
+Plan.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: () => uuidv4(),
+      primaryKey: true,
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
+    stripePriceIdMonthly: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    stripePriceIdAnnual: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    priceMonthly: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: true,
+    },
+    priceAnnual: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: true,
+    },
+    limits: {
+      type: DataTypes.JSONB,
+      defaultValue: {},
+    },
+    features: {
+      type: DataTypes.JSONB,
+      defaultValue: {},
+    },
+  },
+  {
+    sequelize,
+    modelName: 'Plan',
+    tableName: 'plans',
+  }
+);
+
+// ===== SUBSCRIPTION MODEL =====
+export class Subscription extends Model {
+  declare id: string;
+  declare tenantId: string;
+  declare planId: string;
+  declare stripeCustomerId: string | null;
+  declare stripeSubscriptionId: string | null;
+  declare status: 'trialing' | 'active' | 'past_due' | 'canceled' | 'incomplete';
+  declare currentPeriodEnd: Date | null;
+  declare createdAt: Date;
+  declare updatedAt: Date;
+}
+
+Subscription.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: () => uuidv4(),
+      primaryKey: true,
+    },
+    tenantId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'tenants',
+        key: 'id',
+      },
+    },
+    planId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'plans',
+        key: 'id',
+      },
+    },
+    stripeCustomerId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    stripeSubscriptionId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    status: {
+      type: DataTypes.ENUM('trialing', 'active', 'past_due', 'canceled', 'incomplete'),
+      defaultValue: 'trialing',
+    },
+    currentPeriodEnd: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+  },
+  {
+    sequelize,
+    modelName: 'Subscription',
+    tableName: 'subscriptions',
+  }
+);
+
+// ===== FEATURE FLAG MODEL =====
+export class FeatureFlag extends Model {
+  declare id: string;
+  declare tenantId: string;
+  declare key: string;
+  declare enabled: boolean;
+  declare createdAt: Date;
+  declare updatedAt: Date;
+}
+
+FeatureFlag.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: () => uuidv4(),
+      primaryKey: true,
+    },
+    tenantId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'tenants',
+        key: 'id',
+      },
+    },
+    key: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    enabled: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+  },
+  {
+    sequelize,
+    modelName: 'FeatureFlag',
+    tableName: 'feature_flags',
+    indexes: [{ fields: ['tenantId', 'key'], unique: true }],
+  }
+);
+
+// ===== AI INSIGHT MODEL =====
+export class AiInsight extends Model {
+  declare id: string;
+  declare tenantId: string;
+  declare entityType: string;
+  declare entityId: string;
+  declare status: 'pending' | 'approved' | 'rejected';
+  declare summary: string | null;
+  declare recommendation: string | null;
+  declare confidence: number | null;
+  declare rationale: string | null;
+  declare dataSources: Record<string, any> | null;
+  declare createdAt: Date;
+  declare updatedAt: Date;
+}
+
+AiInsight.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: () => uuidv4(),
+      primaryKey: true,
+    },
+    tenantId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'tenants',
+        key: 'id',
+      },
+    },
+    entityType: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    entityId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+    },
+    status: {
+      type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+      defaultValue: 'pending',
+    },
+    summary: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    recommendation: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    confidence: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+    },
+    rationale: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    dataSources: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+    },
+  },
+  {
+    sequelize,
+    modelName: 'AiInsight',
+    tableName: 'ai_insights',
+    indexes: [{ fields: ['tenantId', 'entityType', 'entityId'] }],
+  }
+);
+
+// ===== AUDIT LOG MODEL =====
+export class AuditLog extends Model {
+  declare id: string;
+  declare tenantId: string;
+  declare actorId: string;
+  declare action: string;
+  declare metadata: Record<string, any>;
+  declare createdAt: Date;
+  declare updatedAt: Date;
+}
+
+AuditLog.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: () => uuidv4(),
+      primaryKey: true,
+    },
+    tenantId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'tenants',
+        key: 'id',
+      },
+    },
+    actorId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    action: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    metadata: {
+      type: DataTypes.JSONB,
+      defaultValue: {},
+    },
+  },
+  {
+    sequelize,
+    modelName: 'AuditLog',
+    tableName: 'audit_logs',
+    indexes: [{ fields: ['tenantId', 'createdAt'] }],
+  }
+);
 
 // ===== USER MODEL =====
 export class User extends Model {
   declare id: string;
+  declare tenantId: string;
   declare email: string;
   declare password: string;
   declare name: string;
@@ -30,10 +360,17 @@ User.init(
       defaultValue: () => uuidv4(),
       primaryKey: true,
     },
+    tenantId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'tenants',
+        key: 'id',
+      },
+    },
     email: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
       validate: {
         isEmail: true,
       },
@@ -75,6 +412,12 @@ User.init(
     sequelize,
     modelName: 'User',
     tableName: 'users',
+    indexes: [
+      {
+        unique: true,
+        fields: ['tenantId', 'email'],
+      },
+    ],
     hooks: {
       beforeCreate: async (user: User) => {
         if (user.password) {
@@ -93,6 +436,7 @@ User.init(
 // ===== PROPERTY MODEL =====
 export class Property extends Model {
   declare id: string;
+  declare tenantId: string;
   declare title: string;
   declare description: string;
   declare location: string;
@@ -117,6 +461,14 @@ Property.init(
       type: DataTypes.UUID,
       defaultValue: () => uuidv4(),
       primaryKey: true,
+    },
+    tenantId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'tenants',
+        key: 'id',
+      },
     },
     title: {
       type: DataTypes.STRING,
@@ -189,6 +541,7 @@ Property.init(
 // ===== CAR MODEL =====
 export class Car extends Model {
   declare id: string;
+  declare tenantId: string;
   declare name: string;
   declare brand: string;
   declare model: string;
@@ -211,6 +564,14 @@ Car.init(
       type: DataTypes.UUID,
       defaultValue: () => uuidv4(),
       primaryKey: true,
+    },
+    tenantId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'tenants',
+        key: 'id',
+      },
     },
     name: {
       type: DataTypes.STRING,
@@ -275,6 +636,7 @@ Car.init(
 // ===== INQUIRY MODEL =====
 export class Inquiry extends Model {
   declare id: string;
+  declare tenantId: string;
   declare userId: string;
   declare propertyId: string;
   declare message: string;
@@ -289,6 +651,14 @@ Inquiry.init(
       type: DataTypes.UUID,
       defaultValue: () => uuidv4(),
       primaryKey: true,
+    },
+    tenantId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'tenants',
+        key: 'id',
+      },
     },
     userId: {
       type: DataTypes.UUID,
@@ -325,6 +695,7 @@ Inquiry.init(
 // ===== NOTIFICATION MODEL =====
 export class Notification extends Model {
   declare id: string;
+  declare tenantId: string;
   declare userId: string;
   declare type: string;
   declare title: string;
@@ -341,6 +712,14 @@ Notification.init(
       type: DataTypes.UUID,
       defaultValue: () => uuidv4(),
       primaryKey: true,
+    },
+    tenantId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'tenants',
+        key: 'id',
+      },
     },
     userId: {
       type: DataTypes.UUID,
@@ -381,6 +760,7 @@ Notification.init(
 // ===== CONTACT MODEL =====
 export class Contact extends Model {
   declare id: string;
+  declare tenantId: string;
   declare name: string;
   declare email: string;
   declare phone: string;
@@ -396,6 +776,14 @@ Contact.init(
       type: DataTypes.UUID,
       defaultValue: () => uuidv4(),
       primaryKey: true,
+    },
+    tenantId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'tenants',
+        key: 'id',
+      },
     },
     name: {
       type: DataTypes.STRING,
@@ -431,6 +819,7 @@ Contact.init(
 // ===== CAR RESERVATION MODEL =====
 export class CarReservation extends Model {
   declare id: string;
+  declare tenantId: string;
   declare userId: string;
   declare carId: string;
   declare startDate: Date;
@@ -447,6 +836,14 @@ CarReservation.init(
       type: DataTypes.UUID,
       defaultValue: () => uuidv4(),
       primaryKey: true,
+    },
+    tenantId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'tenants',
+        key: 'id',
+      },
     },
     userId: {
       type: DataTypes.UUID,
@@ -489,6 +886,47 @@ CarReservation.init(
 );
 
 // ===== ASSOCIATIONS =====
+Tenant.hasMany(User, { foreignKey: 'tenantId', as: 'users' });
+User.belongsTo(Tenant, { foreignKey: 'tenantId', as: 'tenant' });
+
+Tenant.hasMany(Property, { foreignKey: 'tenantId', as: 'properties' });
+Property.belongsTo(Tenant, { foreignKey: 'tenantId', as: 'tenant' });
+
+Tenant.hasMany(Car, { foreignKey: 'tenantId', as: 'cars' });
+Car.belongsTo(Tenant, { foreignKey: 'tenantId', as: 'tenant' });
+
+Tenant.hasMany(Inquiry, { foreignKey: 'tenantId', as: 'inquiries' });
+Inquiry.belongsTo(Tenant, { foreignKey: 'tenantId', as: 'tenant' });
+
+Tenant.hasMany(Notification, { foreignKey: 'tenantId', as: 'notifications' });
+Notification.belongsTo(Tenant, { foreignKey: 'tenantId', as: 'tenant' });
+
+Tenant.hasMany(Contact, { foreignKey: 'tenantId', as: 'contacts' });
+Contact.belongsTo(Tenant, { foreignKey: 'tenantId', as: 'tenant' });
+
+Tenant.hasMany(CarReservation, { foreignKey: 'tenantId', as: 'reservations' });
+CarReservation.belongsTo(Tenant, { foreignKey: 'tenantId', as: 'tenant' });
+
+Tenant.hasMany(Subscription, { foreignKey: 'tenantId', as: 'subscriptions' });
+Subscription.belongsTo(Tenant, { foreignKey: 'tenantId', as: 'tenant' });
+
+Plan.hasMany(Subscription, { foreignKey: 'planId', as: 'subscriptions' });
+Subscription.belongsTo(Plan, { foreignKey: 'planId', as: 'plan' });
+
+Tenant.hasMany(FeatureFlag, { foreignKey: 'tenantId', as: 'featureFlags' });
+FeatureFlag.belongsTo(Tenant, { foreignKey: 'tenantId', as: 'tenant' });
+
+Tenant.hasMany(AiInsight, { foreignKey: 'tenantId', as: 'aiInsights' });
+AiInsight.belongsTo(Tenant, { foreignKey: 'tenantId', as: 'tenant' });
+
+Tenant.hasMany(AuditLog, { foreignKey: 'tenantId', as: 'auditLogs' });
+AuditLog.belongsTo(Tenant, { foreignKey: 'tenantId', as: 'tenant' });
+
+Tenant.hasMany(ChatMessage, { foreignKey: 'tenantId', as: 'chatMessages' });
+ChatMessage.belongsTo(Tenant, { foreignKey: 'tenantId', as: 'tenant' });
+
+Tenant.hasMany(UserMedia, { foreignKey: 'tenantId', as: 'media' });
+UserMedia.belongsTo(Tenant, { foreignKey: 'tenantId', as: 'tenant' });
 User.hasMany(Property, { foreignKey: 'ownerId', as: 'properties' });
 Property.belongsTo(User, { foreignKey: 'ownerId', as: 'owner' });
 
@@ -510,4 +948,11 @@ CarReservation.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 Car.hasMany(CarReservation, { foreignKey: 'carId', as: 'reservations' });
 CarReservation.belongsTo(Car, { foreignKey: 'carId', as: 'car' });
 
+User.hasMany(ChatMessage, { foreignKey: 'userId', as: 'chatMessages' });
+ChatMessage.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+User.hasMany(UserMedia, { foreignKey: 'userId', as: 'media' });
+UserMedia.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+export { ChatMessage, UserMedia };
 export default sequelize;

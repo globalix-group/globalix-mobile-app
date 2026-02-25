@@ -2,10 +2,10 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-// Hardcoded admin credentials (In production, this would be in a database)
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@globalix.com';
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || bcrypt.hashSync('admin123', 10);
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+// Admin credentials must be provided via environment variables
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRE = '7d';
 const GLOBALIX_BACKEND_URL = process.env.GLOBALIX_BACKEND_URL || 'http://localhost:3002';
 
@@ -16,6 +16,10 @@ export const AdminController = {
    */
   login: async (req: Request, res: Response) => {
     try {
+      if (!ADMIN_EMAIL || !ADMIN_PASSWORD_HASH || !JWT_SECRET) {
+        return res.status(500).json({ error: 'Admin auth configuration missing' });
+      }
+
       const { email, password } = req.body;
 
       // Validate input
@@ -49,9 +53,10 @@ export const AdminController = {
           name: 'Admin',
         },
       });
+      return;
     } catch (error) {
       console.error('Admin login error:', error);
-      res.status(500).json({ error: 'Login failed' });
+      return res.status(500).json({ error: 'Login failed' });
     }
   },
 
@@ -61,6 +66,7 @@ export const AdminController = {
    */
   getDashboard: async (req: Request, res: Response) => {
     try {
+      void req;
       // These would come from database queries in production
       const stats = {
         totalUsers: 0,
@@ -71,10 +77,10 @@ export const AdminController = {
         lastUpdated: new Date(),
       };
 
-      res.json(stats);
+      return res.json(stats);
     } catch (error) {
       console.error('Dashboard error:', error);
-      res.status(500).json({ error: 'Failed to fetch dashboard' });
+      return res.status(500).json({ error: 'Failed to fetch dashboard' });
     }
   },
 
@@ -85,13 +91,22 @@ export const AdminController = {
    */
   getActivity: async (req: Request, res: Response) => {
     try {
+      const serviceToken = process.env.GLOBALIX_BACKEND_TOKEN;
+      if (!serviceToken) {
+        return res.status(500).json({ error: 'GLOBALIX_BACKEND_TOKEN not configured' });
+      }
+
       const { limit = 50, offset = 0, type } = req.query;
       const url = `${GLOBALIX_BACKEND_URL}/api/v1/activities?limit=${limit}&offset=${offset}${type ? `&type=${type}` : ''}`;
       
       console.log('📡 Fetching activities from:', url);
 
       // Fetch activities from globalix-group-backend
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${serviceToken}`,
+        },
+      });
       
       console.log('📊 Response status:', response.status, response.statusText);
       
@@ -105,11 +120,11 @@ export const AdminController = {
         });
       }
 
-      const data = await response.json();
+      const data: any = await response.json();
       console.log('✅ Activities received:', data);
       
       // Return the activities in the expected format
-      res.json({
+      return res.json({
         data: data.data || [],
         total: data.total || 0,
         limit: Number(limit),
@@ -117,7 +132,7 @@ export const AdminController = {
       });
     } catch (error) {
       console.error('Activity error:', error);
-      res.json({
+      return res.json({
         data: [],
         total: 0,
         limit: 50,
@@ -141,10 +156,10 @@ export const AdminController = {
         timestamp: new Date(),
       };
 
-      res.json(earnings);
+      return res.json(earnings);
     } catch (error) {
       console.error('Earnings error:', error);
-      res.status(500).json({ error: 'Failed to fetch earnings' });
+      return res.status(500).json({ error: 'Failed to fetch earnings' });
     }
   },
 
@@ -163,10 +178,10 @@ export const AdminController = {
         timestamp: new Date(),
       };
 
-      res.json(analytics);
+      return res.json(analytics);
     } catch (error) {
       console.error('Analytics error:', error);
-      res.status(500).json({ error: 'Failed to fetch analytics' });
+      return res.status(500).json({ error: 'Failed to fetch analytics' });
     }
   },
 
@@ -176,12 +191,12 @@ export const AdminController = {
    */
   getUsers: async (req: Request, res: Response) => {
     try {
-      const { limit = 50, offset = 0, search } = req.query;
+      const { limit = 50, offset = 0 } = req.query;
 
       // This would query users from database
-      const users = [];
+      const users: any[] = [];
 
-      res.json({
+      return res.json({
         data: users,
         total: 0,
         limit: Number(limit),
@@ -189,7 +204,7 @@ export const AdminController = {
       });
     } catch (error) {
       console.error('Users error:', error);
-      res.status(500).json({ error: 'Failed to fetch users' });
+      return res.status(500).json({ error: 'Failed to fetch users' });
     }
   },
 
@@ -199,6 +214,7 @@ export const AdminController = {
    */
   getAuthStats: async (req: Request, res: Response) => {
     try {
+      void req;
       const stats = {
         loginAttempts: 0,
         successfulLogins: 0,
@@ -208,10 +224,10 @@ export const AdminController = {
         lastUpdated: new Date(),
       };
 
-      res.json(stats);
+      return res.json(stats);
     } catch (error) {
       console.error('Auth stats error:', error);
-      res.status(500).json({ error: 'Failed to fetch auth stats' });
+      return res.status(500).json({ error: 'Failed to fetch auth stats' });
     }
   },
 };

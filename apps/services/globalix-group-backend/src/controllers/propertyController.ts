@@ -5,10 +5,14 @@ import { AppError } from '../middleware/errorHandler';
 export class PropertyController {
   static async getProperties(req: Request, res: Response, next: NextFunction) {
     try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        throw new AppError(400, 'TENANT_REQUIRED', 'Tenant context is required');
+      }
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
 
-      const result = await PropertyService.getProperties(page, limit);
+      const result = await PropertyService.getProperties(tenantId, page, limit);
       res.json({
         success: true,
         data: result,
@@ -20,8 +24,12 @@ export class PropertyController {
 
   static async getPropertyById(req: Request, res: Response, next: NextFunction) {
     try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        throw new AppError(400, 'TENANT_REQUIRED', 'Tenant context is required');
+      }
       const { id } = req.params;
-      const property = await PropertyService.getPropertyById(id);
+      const property = await PropertyService.getPropertyById(tenantId, id);
 
       res.json({
         success: true,
@@ -39,7 +47,12 @@ export class PropertyController {
         throw new AppError(401, 'UNAUTHORIZED', 'Authentication required');
       }
 
-      const property = await PropertyService.createProperty(userId, req.body);
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        throw new AppError(400, 'TENANT_REQUIRED', 'Tenant context is required');
+      }
+
+      const property = await PropertyService.createProperty(tenantId, userId, req.body);
       res.status(201).json({
         success: true,
         data: property,
@@ -56,8 +69,13 @@ export class PropertyController {
         throw new AppError(401, 'UNAUTHORIZED', 'Authentication required');
       }
 
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        throw new AppError(400, 'TENANT_REQUIRED', 'Tenant context is required');
+      }
+
       const { id } = req.params;
-      const property = await PropertyService.updateProperty(id, userId, req.body);
+      const property = await PropertyService.updateProperty(tenantId, id, userId, req.body);
 
       res.json({
         success: true,
@@ -75,8 +93,13 @@ export class PropertyController {
         throw new AppError(401, 'UNAUTHORIZED', 'Authentication required');
       }
 
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        throw new AppError(400, 'TENANT_REQUIRED', 'Tenant context is required');
+      }
+
       const { id } = req.params;
-      const result = await PropertyService.deleteProperty(id, userId);
+      const result = await PropertyService.deleteProperty(tenantId, id, userId);
 
       res.json({
         success: true,
@@ -89,7 +112,12 @@ export class PropertyController {
 
   static async getPropertiesForMap(req: Request, res: Response, next: NextFunction) {
     try {
-      const properties = await PropertyService.getPropertiesForMap();
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        throw new AppError(400, 'TENANT_REQUIRED', 'Tenant context is required');
+      }
+
+      const properties = await PropertyService.getPropertiesForMap(tenantId);
       res.json({
         success: true,
         data: properties,
@@ -103,7 +131,13 @@ export class PropertyController {
     try {
       const { query, type, minPrice, maxPrice } = req.query;
 
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        throw new AppError(400, 'TENANT_REQUIRED', 'Tenant context is required');
+      }
+
       const properties = await PropertyService.searchProperties(
+        tenantId,
         query as string,
         type as string,
         minPrice ? parseInt(minPrice as string) : undefined,
@@ -121,6 +155,7 @@ export class PropertyController {
 
   static async getCategories(req: Request, res: Response, next: NextFunction) {
     try {
+      void req;
       const categories = await PropertyService.getPropertyCategories();
       res.json({
         success: true,

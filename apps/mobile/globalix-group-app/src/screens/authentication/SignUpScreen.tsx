@@ -153,15 +153,17 @@ export const SignUpScreen = ({ navigation }: any) => {
         await setAuthTokens(token, refreshToken);
       }
 
-      // Log activity to backend (non-blocking)
-      Promise.resolve().then(() => {
-        activityApi.logActivity(
+      // Log activity to backend after tokens are set
+      try {
+        await activityApi.logActivity(
           user?.id || `user-${email.split('@')[0]}`,
           `New signup: ${fullName}`,
           'signup',
           { email, name: fullName }
-        ).catch((err) => console.warn('Activity log failed:', err));
-      });
+        );
+      } catch (err) {
+        console.warn('Activity log failed:', err);
+      }
 
       await login();
     } catch (error) {

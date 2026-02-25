@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 // ===== ACTIVITY LOG MODEL =====
 export class ActivityLog extends Model {
   declare id: string;
+  declare tenantId: string;
   declare userId: string;
   declare type: string; // login, signup, property_view, car_view, inquiry, purchase, etc.
   declare action: string;
@@ -21,6 +22,14 @@ ActivityLog.init(
       type: DataTypes.UUID,
       defaultValue: () => uuidv4(),
       primaryKey: true,
+    },
+    tenantId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'tenants',
+        key: 'id',
+      },
     },
     userId: {
       type: DataTypes.UUID,
@@ -62,6 +71,7 @@ ActivityLog.init(
 // ===== ANALYTICS MODEL =====
 export class Analytics extends Model {
   declare id: string;
+  declare tenantId: string;
   declare date: Date;
   declare totalUsers: number;
   declare activeUsers: number;
@@ -79,6 +89,14 @@ Analytics.init(
       type: DataTypes.UUID,
       defaultValue: () => uuidv4(),
       primaryKey: true,
+    },
+    tenantId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'tenants',
+        key: 'id',
+      },
     },
     date: {
       type: DataTypes.DATE,
@@ -129,6 +147,7 @@ Analytics.init(
 // ===== TRANSACTION MODEL (EARNINGS) =====
 export class Transaction extends Model {
   declare id: string;
+  declare tenantId: string;
   declare userId: string;
   declare type: string; // property_sale, car_rental, commission, etc.
   declare amount: number;
@@ -145,6 +164,14 @@ Transaction.init(
       type: DataTypes.UUID,
       defaultValue: () => uuidv4(),
       primaryKey: true,
+    },
+    tenantId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'tenants',
+        key: 'id',
+      },
     },
     userId: {
       type: DataTypes.UUID,

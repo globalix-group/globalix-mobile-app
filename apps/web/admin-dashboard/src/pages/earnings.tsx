@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
 import { Layout } from '../components/Layout';
 import { adminApi } from '../api/adminClient';
 import { useAdmin } from '../context/AdminContext';
@@ -15,8 +14,7 @@ interface Transaction {
 }
 
 const EarningsPage: React.FC = () => {
-  const router = useRouter();
-  const { token } = useAdmin();
+  const { token: _token } = useAdmin();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [earnings, setEarnings] = useState({
     totalEarnings: 0,
@@ -33,18 +31,36 @@ const EarningsPage: React.FC = () => {
   const fetchEarnings = async () => {
     try {
       setLoading(true);
-      const response = await adminApi.getEarnings(period);
-      const data = response.data || {};
+      
+      // Fetch real reservations data for earnings calculation
+      const reservationsResponse = await adminApi.getReservations({ limit: 1000 });
+      const reservationsData = reservationsResponse.data?.data || [];
+      
+      // Calculate real earnings from completed reservations
+      const completedReservations = reservationsData.filter((r: any) => r.status === 'Completed');
+      const pendingReservations = reservationsData.filter((r: any) => r.status === 'Confirmed' || r.status === 'Pending');
+      
+      const completedEarnings = completedReservations.reduce((sum: number, r: any) => sum + (Number(r.totalPrice) || 0), 0);
+      const pendingEarnings = pendingReservations.reduce((sum: number, r: any) => sum + (Number(r.totalPrice) || 0), 0);
+      
       setEarnings({
-        totalEarnings: data.totalEarnings || 0,
-        completedEarnings: data.completedEarnings || 0,
-        pendingEarnings: data.pendingEarnings || 0,
+        totalEarnings: completedEarnings + pendingEarnings,
+        completedEarnings,
+        pendingEarnings,
       });
-      if (Array.isArray(data.transactions)) {
-        setTransactions(data.transactions);
-      } else {
-        setTransactions([]);
-      }
+      
+      // Transform reservations into transactions format
+      const allReservations = [...completedReservations, ...pendingReservations];
+      const transactionsList = allReservations.map((r: any) => ({
+        id: r.id,
+        userId: r.userId,
+        type: 'car_rental',
+        amount: Number(r.totalPrice) || 0,
+        status: r.status === 'Completed' ? 'completed' : 'pending',
+        timestamp: r.createdAt,
+      }));
+      
+      setTransactions(transactionsList);
     } catch (error: any) {
       console.error('Failed to fetch earnings:', error);
       setEarnings({
@@ -230,28 +246,32 @@ const EarningsPage: React.FC = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">Property Sales</span>
-                <span className="text-lg font-bold text-gray-900">$85,000</span>
+                <span className="text-lg font-bold text-gray-900">$0</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-600 h-2 rounded-full" style={{ width: '60%' }}></div>
+                <div className="bg-blue-600 h-2 rounded-full" style={{ width: '0%' }}></div>
               </div>
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">Car Rentals</span>
-                <span className="text-lg font-bold text-gray-900">$35,000</span>
+                <span className="text-lg font-bold text-gray-900">
+                  ${earnings.completedEarnings.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-600 h-2 rounded-full" style={{ width: '25%' }}></div>
+                <div className="bg-green-600 h-2 rounded-full" style={{ 
+                  width: earnings.totalEarnings > 0 ? `${(earnings.completedEarnings / earnings.totalEarnings) * 100}%` : '0%'
+                }}></div>
               </div>
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">Commissions</span>
-                <span className="text-lg font-bold text-gray-900">$5,400</span>
+                <span className="text-lg font-bold text-gray-900">$0</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-purple-600 h-2 rounded-full" style={{ width: '15%' }}></div>
+                <div className="bg-purple-600 h-2 rounded-full" style={{ width: '0%' }}></div>
               </div>
             </div>
           </div>

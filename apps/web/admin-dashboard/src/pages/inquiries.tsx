@@ -29,11 +29,16 @@ const InquiriesPage: React.FC = () => {
       setLoading(true);
       setError(null);
       const response = await adminApi.getInquiries({ limit: 100 });
-      if (response.data.success && response.data.data) {
-        setInquiries(response.data.data);
+      const inquiriesData = response.data?.data || response.data?.inquiries || [];
+      if (Array.isArray(inquiriesData)) {
+        setInquiries(inquiriesData);
+      } else {
+        setInquiries([]);
       }
     } catch (err: any) {
+      console.error('Inquiry fetch error:', err);
       setError(err.response?.data?.message || 'Failed to fetch inquiries');
+      setInquiries([]);
     } finally {
       setLoading(false);
     }
@@ -53,15 +58,15 @@ const InquiriesPage: React.FC = () => {
     }
   };
 
-  const filteredInquiries = inquiries.filter(
+  const filteredInquiries = (inquiries || []).filter(
     (inquiry) => !statusFilter || inquiry.status === statusFilter
   );
 
   const stats = {
-    total: inquiries.length,
-    pending: inquiries.filter((i) => i.status === 'Pending').length,
-    contacted: inquiries.filter((i) => i.status === 'Contacted').length,
-    closed: inquiries.filter((i) => i.status === 'Closed').length,
+    total: (inquiries || []).length,
+    pending: (inquiries || []).filter((i) => i.status === 'Pending').length,
+    contacted: (inquiries || []).filter((i) => i.status === 'Contacted').length,
+    closed: (inquiries || []).filter((i) => i.status === 'Closed').length,
   };
 
   return (

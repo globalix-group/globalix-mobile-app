@@ -28,10 +28,15 @@ import { ProfileScreen } from './src/screens/ProfileScreen';
 import { ContactScreen } from './src/screens/ContactScreen';
 import { CarsScreen } from './src/screens/CarsScreen';
 import { DocsScreen } from './src/screens/DocsScreen';
+import RealsScreen from './src/screens/RealsScreen';
+import UploadRealScreen from './src/screens/UploadRealScreen';
+import { ChatsScreen } from './src/screens/ChatsScreen';
+import ChatConversationScreen from './src/screens/ChatConversationScreen';
 import { InquireScreen } from './src/screens/InquireScreen';
 import { HelpCenterScreen } from './src/screens/HelpCenterScreen';
 import { PrivacyPolicyScreen } from './src/screens/PrivacyPolicyScreen';
 import { NotificationsScreen } from './src/screens/NotificationsScreen';
+import { MediaGalleryScreen } from './src/screens/MediaGalleryScreen';
 import { SignInScreen, SignUpScreen, ForgotPasswordScreen } from './src/screens/authentication';
 
 // ===== CONSTANTS & NAVIGATION =====
@@ -114,6 +119,7 @@ const HomeStack: React.FC = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="HomeMain" component={HomeScreen} />
       <Stack.Screen name="Details" component={DetailsScreen} />
+      <Stack.Screen name="Explore" component={ExploreScreen} />
     </Stack.Navigator>
   );
 };
@@ -157,14 +163,14 @@ const TabNavigator: React.FC = () => {
         options={{ tabBarIcon: (props) => <TabIcon {...props} iconName="car-sport" activeColor={theme.primary} /> }} 
       />
       <Tab.Screen 
-        name="Docs" 
-        component={DocsScreen} 
-        options={{ tabBarIcon: (props) => <TabIcon {...props} iconName="document-text" activeColor={theme.primary} /> }} 
+        name="Reals" 
+        component={RealsScreen} 
+        options={{ tabBarIcon: (props) => <TabIcon {...props} iconName="film" activeColor={theme.primary} /> }} 
       />
       <Tab.Screen 
-        name="Explore" 
-        component={ExploreScreen} 
-        options={{ tabBarIcon: (props) => <TabIcon {...props} iconName="search" activeColor={theme.primary} /> }} 
+        name="Chats" 
+        component={ChatsScreen} 
+        options={{ tabBarIcon: (props) => <TabIcon {...props} iconName="chatbubbles" activeColor={theme.primary} /> }} 
       />
       <Tab.Screen 
         name="Account" 
@@ -199,9 +205,13 @@ const AppNavigator: React.FC = () => {
             <RootStack.Group screenOptions={{ presentation: 'modal' }}>
               <RootStack.Screen name="Inquire" component={InquireScreen} />
               <RootStack.Screen name="Contact" component={ContactScreen} />
+              <RootStack.Screen name="ImmigrationDocs" component={DocsScreen} options={{ headerShown: false }} />
+              <RootStack.Screen name="UploadReal" component={UploadRealScreen} options={{ headerShown: false }} />
+              <RootStack.Screen name="ChatConversation" component={ChatConversationScreen} options={{ headerShown: false }} />
               <RootStack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
               <RootStack.Screen name="HelpCenter" component={HelpCenterScreen} options={{ headerShown: false }} />
               <RootStack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ headerShown: false }} />
+              <RootStack.Screen name="MediaGallery" component={MediaGalleryScreen as any} options={{ headerShown: false }} />
             </RootStack.Group>
           </>
         ) : (

@@ -50,6 +50,9 @@ temp/
 *.sqlite3
 *.db
 
+# Uploads
+apps/services/globalix-group-backend/uploads/
+
 # Secrets and keys
 *.pem
 *.key

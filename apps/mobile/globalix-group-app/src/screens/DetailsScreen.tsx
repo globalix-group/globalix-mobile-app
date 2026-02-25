@@ -43,6 +43,7 @@ interface PropertyData {
   location: string;
   description: string;
   features: string[];
+  image?: string;
 }
 
 // ===== MAIN COMPONENT =====
@@ -159,12 +160,36 @@ export const DetailsScreen: React.FC<DetailsScreenProps> = ({
         ]}
       >
         <TouchableOpacity
-          style={[styles.contactButton, { backgroundColor: theme.primary }]}
+          style={[styles.chatButton, { backgroundColor: theme.primary }]}
+          onPress={() =>
+            navigation.navigate('ChatConversation', {
+              chat: {
+                id: 'new',
+                userId: 'agent1',
+                userName: 'Globalix Agent',
+                userAvatar: 'https://i.pravatar.cc/150?img=10',
+                itemType: 'property',
+                itemTitle: property.title,
+                itemImage: property.image || '',
+                lastMessage: '',
+                timestamp: '',
+                unreadCount: 0,
+                isOnline: true,
+              }
+            })
+          }
+        >
+          <Ionicons name="chatbubbles" size={20} color="#FFF" />
+          <Text style={styles.chatButtonText}>Chat with Agent</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.contactButton, { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.primary }]}
           onPress={() =>
             navigation.navigate('Contact', { title: property.title })
           }
         >
-          <Text style={styles.contactButtonText}>Contact Globalix Agent</Text>
+          <Text style={[styles.contactButtonText, { color: theme.primary }]}>Contact Agent</Text>
         </TouchableOpacity>
       </SafeAreaView>
     </View>
@@ -239,10 +264,35 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingHorizontal: 20,
     paddingVertical: 15,
+    flexDirection: 'row',
+    gap: 12,
+  },
+
+  // Chat button
+  chatButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 18,
+    borderRadius: 20,
+    gap: 8,
+    shadowColor: '#004aad',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  chatButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
 
   // Contact button
   contactButton: {
+    flex: 1,
     padding: 18,
     borderRadius: 20,
     alignItems: 'center',

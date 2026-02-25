@@ -4,19 +4,36 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+// @ts-ignore - expo-constants types issue
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 // Use EXPO_PUBLIC_API_BASE_URL to override in development
 // Example: EXPO_PUBLIC_API_BASE_URL=http://192.168.1.10:3002/api/v1
+const getEnvApiBaseUrl = (): string | null => {
+  const fromEnv = process.env.EXPO_PUBLIC_API_BASE_URL;
+  const fromExtra =
+    (Constants.expoConfig as any)?.extra?.apiBaseUrl ||
+    (Constants.manifest as any)?.extra?.apiBaseUrl ||
+    (Constants as any).manifest2?.extra?.apiBaseUrl;
+
+  return fromEnv || fromExtra || null;
+};
+const getEnvTenantId = (): string | null => {
+  const fromEnv = process.env.EXPO_PUBLIC_TENANT_ID;
+  const fromExtra =
+    (Constants.expoConfig as any)?.extra?.tenantId ||
+    (Constants.manifest as any)?.extra?.tenantId ||
+    (Constants as any).manifest2?.extra?.tenantId;
+
+  return fromEnv || fromExtra || null;
+};
 const getDevServerHost = (): string | null => {
   const hostUri =
     Constants.expoConfig?.hostUri ||
     Constants.manifest?.debuggerHost ||
-    // @ts-expect-error manifest2 is available in newer Expo SDKs
-    Constants.manifest2?.extra?.expoClient?.hostUri ||
-    // @ts-expect-error manifest2 is available in newer Expo SDKs
-    Constants.manifest2?.extra?.expoGo?.debuggerHost ||
+    (Constants as any).manifest2?.extra?.expoClient?.hostUri ||
+    (Constants as any).manifest2?.extra?.expoGo?.debuggerHost ||
     null;
 
   if (!hostUri) return null;
@@ -34,11 +51,21 @@ const FALLBACK_API_BASE_URL =
   }) || 'http://localhost:3002/api/v1';
 
 const DEV_SERVER_HOST = getDevServerHost();
+const ENV_API_BASE_URL = getEnvApiBaseUrl();
 const DEFAULT_API_BASE_URL = DEV_SERVER_HOST
   ? `http://${DEV_SERVER_HOST}:3002/api/v1`
   : FALLBACK_API_BASE_URL;
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL;
+export const API_BASE_URL = ENV_API_BASE_URL || DEFAULT_API_BASE_URL;
+export const SOCKET_BASE_URL = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
+export const TENANT_ID = getEnvTenantId();
+
+if (__DEV__) {
+  // eslint-disable-next-line no-console
+  console.log('🔗 API_BASE_URL:', API_BASE_URL);
+  // eslint-disable-next-line no-console
+  console.log('🔌 SOCKET_BASE_URL:', SOCKET_BASE_URL);
+}
 
 const AUTH_TOKEN_KEY = 'globalix.auth.token';
 const REFRESH_TOKEN_KEY = 'globalix.auth.refreshToken';
@@ -55,6 +82,10 @@ const buildHeaders = async (requiresAuth: boolean) => {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
+
+  if (TENANT_ID) {
+    headers['x-tenant-id'] = TENANT_ID;
+  }
 
   if (requiresAuth) {
     const token = await getAuthToken();
@@ -111,6 +142,13 @@ const makeRequest = async <T = any>(
     if (!response.ok) {
       const errorMsg = normalized.error || 'Request failed';
       console.error(`❌ API Error [${response.status}]:`, errorMsg);
+      
+      // Handle 401 Unauthorized - clear tokens and trigger re-authentication
+      if (response.status === 401) {
+        console.warn('⚠️ Token expired or invalid, clearing authentication');
+        await clearAuthTokens();
+      }
+      
       return { success: false, error: errorMsg, data: normalized.data };
     }
 
@@ -131,6 +169,8 @@ export const setAuthTokens = async (token: string, refreshToken?: string) => {
   } else {
     await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
   }
+  // Ensure token is cached immediately for next request
+  cachedToken = token;
 };
 
 export const getAuthToken = async () => {
@@ -221,6 +261,14 @@ export const reservationsApi = {
   update: (id: string, payload: any) => makeRequest(`/reservations/${id}`, 'PUT', payload, true),
 };
 
+export const chatApi = {
+  list: () => makeRequest('/chats', 'GET', undefined, true),
+  send: (message: string) => makeRequest('/chats', 'POST', { message }, true),
+  markAsRead: () => makeRequest('/chats/read', 'PUT', undefined, true),
+  getUnreadCount: () => makeRequest('/chats/unread', 'GET', undefined, true),
+  clear: () => makeRequest('/chats', 'DELETE', undefined, true),
+};
+
 export default {
   authApi,
   activityApi,
@@ -231,6 +279,7 @@ export default {
   notificationsApi,
   contactsApi,
   reservationsApi,
+  chatApi,
   setAuthTokens,
   getAuthToken,
   clearAuthTokens,

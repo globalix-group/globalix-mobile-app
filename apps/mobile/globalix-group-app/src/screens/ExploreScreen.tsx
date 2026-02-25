@@ -14,8 +14,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { ExploreMap } from '../components/ExploreMap';
 import { useTheme } from '../theme/ThemeContext';
 
 const TRENDING_SPOTS = [
@@ -43,7 +43,7 @@ export const ExploreScreen = () => {
   const [locationLoading, setLocationLoading] = useState(true);
   const [is3D, setIs3D] = useState(false);
   const [cameraAngle, setCameraAngle] = useState(0);
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<any>(null);
   
   // Responsive sizing
   const gridItemSize = (width - (width * 0.1) - 20) / 2;
@@ -54,6 +54,10 @@ export const ExploreScreen = () => {
   
   // Get user location on component mount
   useEffect(() => {
+    if (Platform.OS === 'web') {
+      setLocationLoading(false);
+      return;
+    }
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
@@ -209,94 +213,76 @@ export const ExploreScreen = () => {
                 <Text style={[styles.loadingText, { color: theme.text }]}>Getting your location...</Text>
               </View>
             )}
-            <MapView
-              ref={mapRef}
-              style={styles.map}
-              initialRegion={{
-                latitude: 43.6629,
-                longitude: -79.3957,
-                latitudeDelta: 0.5,
-                longitudeDelta: 0.5,
-              }}
-              showsUserLocation={true}
-              showsMyLocationButton={true}
-              toolbarEnabled={true}
-              provider="google"
-              pitchEnabled={true}
-              rotateEnabled={true}
-              scrollEnabled={true}
-              zoomEnabled={true}
-            >
-              {MAP_MARKERS.map((marker) => (
-                <Marker
-                  key={marker.id}
-                  coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
-                  title={marker.title}
-                  description={marker.description}
-                  pinColor={selectedMarker === marker.id ? '#FF6B6B' : theme.primary}
-                  onPress={() => handleMarkerPress(marker.id)}
-                />
-              ))}
-            </MapView>
+            <ExploreMap
+              mapRef={mapRef}
+              markers={MAP_MARKERS}
+              selectedMarker={selectedMarker}
+              onMarkerPress={handleMarkerPress}
+              theme={theme}
+            />
 
-            {/* 3D and Rotation Controls */}
-            <View style={styles.mapControlsContainer}>
-              <TouchableOpacity 
-                style={[styles.mapControlBtn, { backgroundColor: is3D ? theme.primary : theme.card, borderColor: theme.border }]}
-                onPress={toggle3DView}
-              >
-                <Ionicons name="cube" size={20} color={is3D ? '#FFF' : theme.primary} />
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.mapControlBtn, { backgroundColor: theme.card, borderColor: theme.border }]}
-                onPress={rotateCameraLeft}
-                disabled={!is3D}
-              >
-                <Ionicons name="arrow-back" size={20} color={is3D ? theme.primary : theme.border} />
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.mapControlBtn, { backgroundColor: theme.card, borderColor: theme.border }]}
-                onPress={rotateCameraRight}
-                disabled={!is3D}
-              >
-                <Ionicons name="arrow-forward" size={20} color={is3D ? theme.primary : theme.border} />
-              </TouchableOpacity>
-            </View>
-            
-            {/* Selected Location Card */}
-            {selectedMarker && (
-              <View style={[styles.selectedLocationCard, { backgroundColor: isDark ? '#1a1a2e' : '#FFF', borderColor: theme.border }]}>
-                {MAP_MARKERS.map(marker => 
-                  marker.id === selectedMarker ? (
-                    <View key={marker.id}>
-                      <View style={styles.selectedHeaderRow}>
-                        <View>
-                          <Text style={[styles.selectedTitle, { color: theme.text }]}>{marker.title}</Text>
-                          <Text style={[styles.selectedCount, { color: theme.secondary }]}>{marker.description}</Text>
+            {Platform.OS !== 'web' && (
+              <>
+                {/* 3D and Rotation Controls */}
+                <View style={styles.mapControlsContainer}>
+                  <TouchableOpacity 
+                    style={[styles.mapControlBtn, { backgroundColor: is3D ? theme.primary : theme.card, borderColor: theme.border }]}
+                    onPress={toggle3DView}
+                  >
+                    <Ionicons name="cube" size={20} color={is3D ? '#FFF' : theme.primary} />
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[styles.mapControlBtn, { backgroundColor: theme.card, borderColor: theme.border }]}
+                    onPress={rotateCameraLeft}
+                    disabled={!is3D}
+                  >
+                    <Ionicons name="arrow-back" size={20} color={is3D ? theme.primary : theme.border} />
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[styles.mapControlBtn, { backgroundColor: theme.card, borderColor: theme.border }]}
+                    onPress={rotateCameraRight}
+                    disabled={!is3D}
+                  >
+                    <Ionicons name="arrow-forward" size={20} color={is3D ? theme.primary : theme.border} />
+                  </TouchableOpacity>
+                </View>
+                
+                {/* Selected Location Card */}
+                {selectedMarker && (
+                  <View style={[styles.selectedLocationCard, { backgroundColor: isDark ? '#1a1a2e' : '#FFF', borderColor: theme.border }]}>
+                    {MAP_MARKERS.map(marker => 
+                      marker.id === selectedMarker ? (
+                        <View key={marker.id}>
+                          <View style={styles.selectedHeaderRow}>
+                            <View>
+                              <Text style={[styles.selectedTitle, { color: theme.text }]}>{marker.title}</Text>
+                              <Text style={[styles.selectedCount, { color: theme.secondary }]}>{marker.description}</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => setSelectedMarker(null)}>
+                              <Ionicons name="close" size={24} color={theme.text} />
+                            </TouchableOpacity>
+                          </View>
+                          <TouchableOpacity 
+                            style={[styles.viewButton, { backgroundColor: theme.primary }]}
+                            onPress={() => navigateToLocation(marker.latitude, marker.longitude)}
+                          >
+                            <Ionicons name="navigate" size={18} color="#FFF" />
+                            <Text style={styles.viewButtonText}>Go to Location</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={[styles.viewButton, { backgroundColor: isDark ? '#333' : '#F0F0F0', borderWidth: 1, borderColor: theme.border }]}
+                          >
+                            <Ionicons name="home" size={18} color={theme.primary} />
+                            <Text style={[styles.viewButtonText, { color: theme.primary }]}>View Properties</Text>
+                          </TouchableOpacity>
                         </View>
-                        <TouchableOpacity onPress={() => setSelectedMarker(null)}>
-                          <Ionicons name="close" size={24} color={theme.text} />
-                        </TouchableOpacity>
-                      </View>
-                      <TouchableOpacity 
-                        style={[styles.viewButton, { backgroundColor: theme.primary }]}
-                        onPress={() => navigateToLocation(marker.latitude, marker.longitude)}
-                      >
-                        <Ionicons name="navigate" size={18} color="#FFF" />
-                        <Text style={styles.viewButtonText}>Go to Location</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={[styles.viewButton, { backgroundColor: isDark ? '#333' : '#F0F0F0', borderWidth: 1, borderColor: theme.border }]}
-                      >
-                        <Ionicons name="home" size={18} color={theme.primary} />
-                        <Text style={[styles.viewButtonText, { color: theme.primary }]}>View Properties</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : null
+                      ) : null
+                    )}
+                  </View>
                 )}
-              </View>
+              </>
             )}
           </View>
         ) : (

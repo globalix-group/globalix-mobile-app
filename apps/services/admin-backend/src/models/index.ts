@@ -389,7 +389,7 @@ Contact.init(
     },
     subject: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     message: {
       type: DataTypes.TEXT,
