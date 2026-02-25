@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import 'dotenv/config';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import path from 'path';
 import mainRoutes from './routes/index';
 import adminRoutes from './routes/admin';
@@ -105,7 +105,7 @@ const authLimiter = rateLimit({
 const tenantKey = (req: express.Request): string => {
   const headerTenant = req.headers['x-tenant-id'];
   const tenantId = Array.isArray(headerTenant) ? headerTenant[0] : headerTenant;
-  return tenantId || req.ip || 'anonymous';
+  return tenantId || ipKeyGenerator(req);
 };
 
 const readLimiter = rateLimit({
