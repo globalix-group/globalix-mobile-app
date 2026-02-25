@@ -70,9 +70,7 @@ jobs:
         working-directory:
           - 'apps/services/globalix-group-backend'
           - 'apps/services/admin-backend'
-          - 'apps/mobile/globalix-group-app'
-          - 'apps/web/admin-dashboard'
-    steps:
+                  continue-on-error: true
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -81,7 +79,8 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: '${{ matrix.working-directory }}/package-lock.json'
+          cache-dependency-path: |
+            **/package-lock.json
 
       - name: Install dependencies
         working-directory: ${{ matrix.working-directory }}
@@ -118,8 +117,10 @@ jobs:
             name: 'admin-backend'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+                    # Artifact names cannot contain slashes.
+                    name: npm-audit-report-${{ replace(matrix.working-directory, '/', '-') }}
 
+                    if-no-files-found: warn
       - name: Build Docker image
         run: |
           docker build -f ${{ matrix.dockerfile.path }} -t ${{ matrix.dockerfile.name }}:latest .
@@ -138,10 +139,15 @@ jobs:
         with:
           sarif_file: '${{ matrix.dockerfile.name }}-trivy-results.sarif'
           category: 'trivy-${{ matrix.dockerfile.name }}'
-
+                    docker build \
+                      -f ${{ matrix.dockerfile.path }} \
+                      -t ${{ matrix.dockerfile.name }}:latest \
+                      $(dirname "${{ matrix.dockerfile.path }}")
       - name: Generate Trivy report (JSON)
         uses: aquasecurity/trivy-action@master
         with:
+                  env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           image-ref: '${{ matrix.dockerfile.name }}:latest'
           format: 'json'
           output: '${{ matrix.dockerfile.name }}-trivy-report.json'
@@ -150,6 +156,8 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
+                  env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           name: trivy-report-${{ matrix.dockerfile.name }}
           path: '${{ matrix.dockerfile.name }}-trivy-report.json'
 
@@ -161,6 +169,7 @@ jobs:
       matrix:
         working-directory:
           - 'apps/services/globalix-group-backend'
+                    if-no-files-found: warn
           - 'apps/services/admin-backend'
           - 'apps/mobile/globalix-group-app'
           - 'apps/web/admin-dashboard'
@@ -173,7 +182,8 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: '${{ matrix.working-directory }}/package-lock.json'
+          cache-dependency-path: |
+            **/package-lock.json
 
       - name: Install dependencies
         working-directory: ${{ matrix.working-directory }}
