@@ -7,11 +7,16 @@ const seed = async () => {
     await sequelize.authenticate();
     await sequelize.sync({ alter: true });
 
+    const demoPassword = process.env.SEED_DEMO_PASSWORD;
+    if (!demoPassword) {
+      throw new Error('SEED_DEMO_PASSWORD must be set to seed demo data');
+    }
+
     const [owner] = await User.findOrCreate({
       where: { email: 'demo@globalix.com' },
       defaults: {
         name: 'Globalix Demo',
-        password: 'Password123!',
+        password: demoPassword,
         isEmailVerified: true,
       },
     });

@@ -96,8 +96,10 @@ export class AiInsightsService {
       return;
     }
 
-    const payload = await response.json();
-    const content = payload?.choices?.[0]?.message?.content || '{}';
+    const payload = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const content = payload.choices?.[0]?.message?.content || '{}';
     let parsed: any = {};
     try {
       parsed = JSON.parse(content);

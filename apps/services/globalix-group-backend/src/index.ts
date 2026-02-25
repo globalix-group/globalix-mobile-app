@@ -102,10 +102,10 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const tenantKey = (req: express.Request) => {
+const tenantKey = (req: express.Request): string => {
   const headerTenant = req.headers['x-tenant-id'];
-  if (Array.isArray(headerTenant)) return headerTenant[0] || req.ip;
-  return headerTenant || req.ip;
+  const tenantId = Array.isArray(headerTenant) ? headerTenant[0] : headerTenant;
+  return tenantId || req.ip || 'anonymous';
 };
 
 const readLimiter = rateLimit({

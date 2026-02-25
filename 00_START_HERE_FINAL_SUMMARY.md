@@ -312,7 +312,7 @@ Help you navigate all materials:
 
 ```bash
 # 1. Set environment variables
-export DB_PASSWORD=SecurePassword123!
+export DB_PASSWORD=<example_password>
 export JWT_SECRET=$(openssl rand -hex 32)
 export JWT_REFRESH_SECRET=$(openssl rand -hex 32)
 

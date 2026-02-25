@@ -463,7 +463,7 @@ pg_dump -h localhost -U postgres -d restate_db > backup_restate_db.sql
 psql -U postgres -c "CREATE DATABASE restate_db;"
 
 # 2. Set environment variables
-export DB_PASSWORD=YourSecurePassword123!
+export DB_PASSWORD=<example_password>
 export JWT_SECRET=$(openssl rand -hex 32)
 export JWT_REFRESH_SECRET=$(openssl rand -hex 32)
 

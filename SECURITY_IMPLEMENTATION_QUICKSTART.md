@@ -36,7 +36,7 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=restate_db
 DB_USER=postgres
-DB_PASSWORD=SecurePassword123!
+DB_PASSWORD=<example_password>
 
 # JWT
 JWT_SECRET=$(openssl rand -hex 32)
@@ -58,7 +58,7 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=restate_db
 DB_USER=postgres
-DB_PASSWORD=SecurePassword123!
+DB_PASSWORD=<example_password>
 
 # JWT
 JWT_SECRET=$(openssl rand -hex 32)

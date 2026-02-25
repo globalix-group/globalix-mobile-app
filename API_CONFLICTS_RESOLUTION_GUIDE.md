@@ -285,11 +285,11 @@ export const login = async (req: Request, res: Response) => {
 ```bash
 # Generate strong secrets
 openssl rand -hex 32
-# Output: a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2
+# Output: <generated-32-byte-hex>
 
 # Add to .env
-JWT_SECRET=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2
-JWT_REFRESH_SECRET=f2e1d0c9b8a7z6y5x4w3v2u1t0s9r8q7p6o5n4m3l2k1j0i9h8g7f6e5d4c3b2a1
+JWT_SECRET=<your_generated_jwt_secret>
+JWT_REFRESH_SECRET=<your_generated_refresh_secret>
 ```
 
 ---

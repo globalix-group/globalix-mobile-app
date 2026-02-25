@@ -316,7 +316,7 @@ Check audit logging:
 # Test audit logging
 curl -X POST http://localhost:3000/api/v1/admin/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@globalix.com","password":"SecurePassword123!"}'
+  -d '{"email":"admin@globalix.com","password":"<example_password>"}'
 
 # Verify logs are created/stored
 ```

@@ -184,7 +184,7 @@ trivy fs .
 ### `.gitleaksignore`
 - Documents safe patterns (test credentials)
 - Prevents false positives
-- Examples: `demo@globalix.com`, `Password123!`
+- Examples: `demo@globalix.com`, `<example_password>`
 
 ### `.trivyignore`
 - Manages CVE exceptions

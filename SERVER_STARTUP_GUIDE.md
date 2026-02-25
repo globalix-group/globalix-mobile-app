@@ -28,7 +28,7 @@
 
 ```
 Email:    demo@globalix.com
-Password: Password123!
+Password: <example_password>
 ```
 
 ## 📊 Available Endpoints (Main API)
@@ -118,7 +118,7 @@ Mobile API Configuration (in apiClient.ts):
 1. Go to http://localhost:3001
 2. Use demo credentials:
    - Email: `demo@globalix.com`
-   - Password: `Password123!`
+  - Password: `<example_password>`
 
 ## 🛠️ Server Management
 
@@ -159,7 +159,7 @@ tail -f /tmp/admin-dashboard.log
 
 **Demo User Account**
 - Email: `demo@globalix.com`
-- Password: `Password123!`
+- Password: `<example_password>`
 - Created by seed script
 
 **Properties (3 total)**
@@ -197,7 +197,7 @@ curl -X POST http://localhost:3002/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "demo@globalix.com",
-    "password": "Password123!"
+    "password": "<example_password>"
   }'
 
 # Get health status

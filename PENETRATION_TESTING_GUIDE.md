@@ -159,7 +159,7 @@ for i in {1..6}; do
   echo "Attempt $i:"
   curl -X POST http://localhost:3000/api/v1/admin/auth/login \
     -H "Content-Type: application/json" \
-    -d '{"email":"admin@globalix.com","password":"WrongPassword123!"}'
+    -d '{"email":"admin@globalix.com","password":"<wrong_password>"}'
   echo ""
   sleep 1
 done
@@ -242,7 +242,7 @@ Expected: 400 Bad Request
 ```bash
 curl -X POST http://localhost:3002/api/v1/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123!@#"}'
+  -d '{"email":"test@example.com","password":"<example_password>"}'
 ```
 
 Expected: 400 Bad Request
@@ -429,10 +429,10 @@ echo ""
 echo "Test 3: Rate Limiting"
 for i in {1..5}; do
   test_endpoint "Login Attempt $i" "POST" "http://localhost:3002/api/v1/auth/login" \
-    '{"email":"admin@globalix.com","password":"WrongPassword123!"}' "401"
+    '{"email":"admin@globalix.com","password":"<wrong_password>"}' "401"
 done
 test_endpoint "Login Attempt 6 (should be rate limited)" "POST" "http://localhost:3002/api/v1/auth/login" \
-  '{"email":"admin@globalix.com","password":"WrongPassword123!"}' "429"
+  '{"email":"admin@globalix.com","password":"<wrong_password>"}' "429"
 echo ""
 
 # Summary

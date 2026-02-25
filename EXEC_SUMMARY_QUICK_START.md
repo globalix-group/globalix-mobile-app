@@ -108,7 +108,7 @@ All in: `/Users/emmanueltangadivine/globalix-group/`
 
 ```bash
 # 1. Create .env files with secrets
-export DB_PASSWORD=SecurePassword123!
+export DB_PASSWORD=<example_password>
 export JWT_SECRET=$(openssl rand -hex 32)
 export JWT_REFRESH_SECRET=$(openssl rand -hex 32)
 

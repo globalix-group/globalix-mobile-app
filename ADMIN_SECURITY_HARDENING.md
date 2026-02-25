@@ -729,7 +729,7 @@ export default router;
 for i in {1..10}; do
   curl -X POST http://localhost:3000/api/v1/admin/auth/login \
     -H "Content-Type: application/json" \
-    -d '{"email":"admin@globalix.com","password":"WrongPassword123!"}'
+    -d '{"email":"admin@globalix.com","password":"<wrong_password>"}'
   sleep 10
 done
 
