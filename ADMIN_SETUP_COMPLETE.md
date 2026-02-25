@@ -56,7 +56,7 @@ npm install bcryptjs  # if not already installed
 
 # Run this in Node.js:
 const bcrypt = require('bcryptjs');
-const password = 'your-secure-password';
+const password = process.env.ADMIN_PASSWORD;
 const hash = bcrypt.hashSync(password, 10);
 console.log(hash);
 ```

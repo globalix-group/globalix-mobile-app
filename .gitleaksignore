@@ -12,3 +12,6 @@ xxx-replace-me-xxx
 your-secret-here
 your-token-here
 change-me-in-production
+
+# Ignore penetration test suite fixtures
+apps/services/penetration-test-suite.ts

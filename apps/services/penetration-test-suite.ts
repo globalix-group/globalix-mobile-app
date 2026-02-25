@@ -65,7 +65,7 @@ export async function testSQLInjection() {
     sqlInjectionTests++;
     const response = await testEndpoint('POST', '/api/v1/auth/login', {
       email: payload,
-      password: 'password123',
+      password: 'example_pass',
     });
 
     // Should not return database errors or unexpected data
@@ -110,7 +110,7 @@ export async function testXSSPrevention() {
     xssTests++;
     const response = await testEndpoint('POST', '/api/v1/auth/register', {
       email: 'test@example.com',
-      password: 'SecurePass123!',
+      password: 'example_pass',
       name: payload,
     });
 
@@ -194,7 +194,7 @@ export async function testRateLimiting() {
     requestsMade++;
     const response = await testEndpoint('POST', '/api/v1/auth/login', {
       email: `test${i}@example.com`,
-      password: 'password123',
+      password: 'example_pass',
     });
 
     if (response.status === 429) {
@@ -259,11 +259,11 @@ export async function testPasswordValidation() {
   console.log('\n🔒 Testing Password Validation...');
 
   const weakPasswords = [
-    { password: '123456', reason: 'Too short' },
-    { password: 'password', reason: 'No numbers or symbols' },
-    { password: 'Pass123', reason: 'Too short' },
-    { password: 'ABC123!!!', reason: 'No lowercase' },
-    { password: 'abc123!!!', reason: 'No uppercase' },
+    { password: 'weak_pass_1', reason: 'Too short' },
+    { password: 'weak_pass_2', reason: 'No numbers or symbols' },
+    { password: 'weak_pass_3', reason: 'Too short' },
+    { password: 'weak_pass_4', reason: 'No lowercase' },
+    { password: 'weak_pass_5', reason: 'No uppercase' },
   ];
 
   let passwordTests = 0;
